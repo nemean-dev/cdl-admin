@@ -1,0 +1,2 @@
+FLASK_APP=cdl_admin.py
+FLASK_DEBUG=1
