@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Acciones</h2>
+
+<ul>
+  <li><a href="{{ url_for('captura') }}">Subir productos en captura</a></li>
+  <li><a href="{{ url_for('etiquetas') }}">Imprimir etiquetas</a></li>
+  <li><a href="{{ url_for('exportar_productos') }}">Obtener productos por proveedor/estado/etc</a></li>
+</ul>
+{% endblock %}
