@@ -1,0 +1,1 @@
+An admin dashboard for a shopify store.
