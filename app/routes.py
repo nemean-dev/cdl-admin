@@ -8,7 +8,7 @@ def index():
 
 @app.route('/captura')
 def captura():
-    return 'building...'
+    return render_template('captura.html')
 
 @app.route('/etiquetas')
 def etiquetas():
