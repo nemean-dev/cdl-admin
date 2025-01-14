@@ -7,20 +7,6 @@ from app.models import User
 from app.auth import bp
 from app.auth.forms import LoginForm
 
-USERS = [
-    {
-        'email': 'frodo@example.com',
-        'password': '1234'
-    },
-    {
-        'email': 'sam@example.com',
-        'password': '1234'
-    },
-    {
-        'email': 'sauron@example.com',
-        'password': '4321'
-    }]
-
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:

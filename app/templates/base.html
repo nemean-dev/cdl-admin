@@ -67,6 +67,15 @@
               {% else %}
               <li class="nav-item">
                 <a
+                  class="nav-link disabled-link"
+                  aria-current="page"
+                  href="#"
+                  disabled
+                  >{{ "Hola " + current_user.fname + "!" if current_user.fname else current_user.email }}</a
+                >
+              </li>
+              <li class="nav-item">
+                <a
                   class="nav-link"
                   aria-current="page"
                   href="{{ url_for('auth.logout') }}"
