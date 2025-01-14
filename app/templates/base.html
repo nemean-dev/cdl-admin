@@ -55,7 +55,7 @@
             </ul>
             <!-- Right-sided stuff -->
             <ul class="navbar-nav mb-2 mb-lg-0">
-              <!-- { % if current_user.is_anonymous % } -->
+              {% if current_user.is_anonymous %}
               <li class="nav-item">
                 <a
                   class="nav-link"
@@ -64,38 +64,28 @@
                   >Iniciar Sesión</a
                 >
               </li>
-              <!-- { % else % }
+              {% else %}
               <li class="nav-item">
                 <a
                   class="nav-link"
                   aria-current="page"
-                  href="{ { url_for('main.user', username=current_user.username) } }"
-                  >Configuración</a
-                >
-              </li>
-              <li class="nav-item">
-                <a
-                  class="nav-link"
-                  aria-current="page"
-                  href="{ { url_for('auth.logout') } }"
+                  href="{{ url_for('auth.logout') }}"
                   >Cerrar Sesión</a
                 >
               </li>
-              { % endif % } -->
+              {% endif %}
             </ul>
           </div>
         </div>
       </nav>
 
     <div class="container-sm mt-3">
-      <h1>Casa de Luna</h1>
-
       <!-- Flashed messages -->
       {% with messages = get_flashed_messages() %} {% if messages %} {% for
       message in messages %}
       <div class="alert alert-info" role="alert">{{ message }}</div>
       {% endfor %} {% endif %} {% endwith %}
-
+      <h1>Casa de Luna</h1>
       <!-- Page-specific content -->
       {% block content %}{% endblock %}
     </div>

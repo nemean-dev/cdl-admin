@@ -1,10 +1,16 @@
 from typing import Optional
 from datetime import datetime, timezone
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import UserMixin
 import sqlalchemy as sa
 import sqlalchemy.orm as orm
-from app import db
+from app import db, login
 
-class User(db.Model):
+@login.user_loader
+def load_user(id):
+    return db.session.get(User, int(id))
+
+class User(UserMixin, db.Model):
     id: orm.Mapped[int] = orm.mapped_column(primary_key=True)
     email: orm.Mapped[str] = orm.mapped_column(sa.String(256), index=True,
                                              unique=True)
@@ -18,6 +24,12 @@ class User(db.Model):
 
     def __repr__(self):
         return '<User {}>'.format(self.email)
+    
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
     
 class AdminAction(db.Model):
     id: orm.Mapped[int] = orm.mapped_column(primary_key=True)
