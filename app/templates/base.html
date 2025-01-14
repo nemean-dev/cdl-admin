@@ -67,10 +67,9 @@
               {% else %}
               <li class="nav-item">
                 <a
-                  class="nav-link disabled-link"
+                  class="nav-link"
                   aria-current="page"
-                  href="#"
-                  disabled
+                  href="{{ url_for('user', id=current_user.id) }}"
                   >{{ "Hola " + current_user.fname + "!" if current_user.fname else current_user.email }}</a
                 >
               </li>
