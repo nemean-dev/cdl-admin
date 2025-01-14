@@ -3,7 +3,7 @@ from flask import render_template, abort, flash, redirect, url_for, request
 from flask_login import login_required, current_user
 import sqlalchemy as sa
 from app import app, db
-from app.models import User
+from app.models import User, AdminAction
 from app.forms import UserSettingsForm
 
 @app.before_request
@@ -18,6 +18,13 @@ def before_request():
 def index():
     return render_template('index.html')
 
+@app.route('/action-log')
+@login_required
+def action_log():
+    actions = db.session.scalars(sa.select(AdminAction)).all()
+    return render_template('action_log.html', actions=actions) #TODO add pagination here and in the user profiles
+    #TODO: add number id to action log and proper spacing
+
 @app.route('/user/<id>')
 @login_required
 def user(id):
@@ -25,10 +32,7 @@ def user(id):
     if user is None:
         abort(404)
 
-    actions = [
-        {'action': 'Post products', 'status': 'completed', 'admin': user},
-        {'action': 'Generate report', 'status': 'completed', 'admin': user}
-    ] #TODO
+    actions = db.session.scalars(sa.select(AdminAction).where(AdminAction.admin == user))
 
     return render_template('user.html', user=user, actions=actions)
 

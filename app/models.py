@@ -18,7 +18,7 @@ class User(UserMixin, db.Model):
     lname: orm.Mapped[Optional[str]] = orm.mapped_column(sa.String(128))
     password_hash: orm.Mapped[str] = orm.mapped_column(sa.String(256))
     last_seen: orm.Mapped[Optional[datetime]] = orm.mapped_column(
-        default=lambda: datetime.now(timezone.utc))
+        default=lambda: datetime.now(timezone.utc))#TODO delete default and instead add a 'created' field.
     actions: orm.WriteOnlyMapped['AdminAction'] = orm.relationship(
         back_populates='admin')
 
