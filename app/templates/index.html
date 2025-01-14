@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
 
+<h1>Casa de Luna</h1>
+<hr>
+
 <h2>Acciones</h2>
 
 <ul>
@@ -8,6 +11,9 @@
   <li><a class="disabled-link" href="{{ url_for('etiquetas') }}">Imprimir etiquetas</a></li>
   <li><a class="disabled-link" href="{{ url_for('exportar_productos') }}">Obtener productos por proveedor/estado/etc</a></li>
   <li><a class="disabled-link" href="#">Reporte de ventas</a></li>
+  {% if current_user.is_superadmin %}
+  <li><a href="{{ url_for('auth.register_users') }}">Agregar administradores</a></li>
+  {% endif %}
 </ul>
 <a href="{{ url_for('action_log') }}">Ver historial de acciones</a>
 <h2>Viajes</h2>
