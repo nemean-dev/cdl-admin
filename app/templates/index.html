@@ -8,7 +8,7 @@
 
 <ul>
   <li><a href="{{ url_for('captura') }}">Subir productos en captura</a></li>
-  <li><a class="disabled-link" href="{{ url_for('etiquetas') }}">Imprimir etiquetas</a></li>
+  <li><a href="{{ url_for('etiquetas') }}">Imprimir etiquetas</a></li>
   <li><a class="disabled-link" href="{{ url_for('exportar_productos') }}">Obtener productos por proveedor/estado/etc</a></li>
   <li><a class="disabled-link" href="#">Reporte de ventas</a></li>
   {% if current_user.is_superadmin %}

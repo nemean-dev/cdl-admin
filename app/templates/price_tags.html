@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1>Imprimir Etiquetas</h1>
+
+<h2>Pasos</h2>
+<ol>
+    <li>Poner lista de SKUs a imprimir en <a href="https://docs.google.com/spreadsheets/d/1j2qTiWSksD-cqMqWjKmRWr05E7E-76dVFh5ksrUvz2M/edit?gid=0#gid=0">Google Sheets</a></li>
+    <li>Descargar PDF haciendo click <a href="{{ url_for('generate_labels') }}">aquí</a></li>
+</ol>
+
+{% endblock %}

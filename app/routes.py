@@ -64,7 +64,7 @@ def captura():
 
 @app.route('/etiquetas')
 def etiquetas():
-    return 'building...'
+    return render_template('price_tags.html', title='Etiquetas')
 
 @app.route('/generar-pdf-etiquetas')
 @login_required
