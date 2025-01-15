@@ -1,5 +1,6 @@
+import os
+import time
 from datetime import datetime, timezone
-import tempfile
 from flask import render_template, abort, flash, redirect, url_for, request, send_file
 from flask_login import login_required, current_user
 import sqlalchemy as sa
@@ -73,11 +74,15 @@ def generate_labels():
 
     try:
         data = fetch_data_from_sheety(sheety_url, bearer_token)
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_pdf:
-            generate_pdf(data, temp_pdf.name)
-            temp_pdf_path = temp_pdf.name
+        
+        timestamp = int(time.time())
+        pdf_filename = f"labels_{timestamp}.pdf"
+        pdf_path = os.path.join(app.static_folder, 'pdfs', pdf_filename)
+        os.makedirs(os.path.dirname(pdf_path), exist_ok=True)
 
-        return send_file(temp_pdf_path, as_attachment=True, download_name='labels.pdf')
+        generate_pdf(data, pdf_path)
+        
+        return send_file(pdf_path, as_attachment=True, download_name=pdf_filename)
 
     except Exception as e:
         app.logger.error(f"Error generating labels: {e}")

@@ -1,3 +1,5 @@
+app/static/pdfs
+
 *__pycache__*
 *.db
 
