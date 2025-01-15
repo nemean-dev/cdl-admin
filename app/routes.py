@@ -7,7 +7,8 @@ import sqlalchemy as sa
 from app import app, db
 from app.models import User, AdminAction
 from app.forms import UserSettingsForm
-from app.price_tags import fetch_data_from_sheety, generate_pdf
+from app.sheety import fetch_sheet_data
+from app.price_tags import generate_pdf
 
 @app.before_request
 def before_request():
@@ -69,11 +70,8 @@ def etiquetas():
 @app.route('/generar-pdf-etiquetas')
 @login_required
 def generate_labels():
-    sheety_url = app.config['SHEETY_PRICETAGS_URL']
-    bearer_token = app.config['SHEETY_PRICETAGS_BEARER']
-
     try:
-        data = fetch_data_from_sheety(sheety_url, bearer_token)
+        data = fetch_sheet_data('etiquetas', 'etiquetas')
         
         timestamp = int(time.time())
         pdf_filename = f"labels_{timestamp}.pdf"

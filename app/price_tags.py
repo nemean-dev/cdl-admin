@@ -2,18 +2,8 @@ import pandas as pd
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase.pdfmetrics import stringWidth
-import requests
 
-def fetch_data_from_sheety(sheety_url, bearer_token):
-    """Fetch data from the Sheety API."""
-    headers = {
-        "Authorization": f"Bearer {bearer_token}"
-    }
-    response = requests.get(sheety_url, headers=headers)
-    response.raise_for_status()
-    return pd.DataFrame(response.json().get('etiquetas', []))
-
-def generate_pdf(data, pdf_filename):
+def generate_pdf(data:pd.DataFrame, pdf_filename:str):
     """Generate a PDF from given data."""
     c = canvas.Canvas(pdf_filename, pagesize=letter)
     x_start, y_start = 40, 710
