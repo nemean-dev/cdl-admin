@@ -1,10 +1,12 @@
 from datetime import datetime, timezone
-from flask import render_template, abort, flash, redirect, url_for, request
+import tempfile
+from flask import render_template, abort, flash, redirect, url_for, request, send_file
 from flask_login import login_required, current_user
 import sqlalchemy as sa
 from app import app, db
 from app.models import User, AdminAction
 from app.forms import UserSettingsForm
+from app.price_tags import fetch_data_from_sheety, generate_pdf
 
 @app.before_request
 def before_request():
@@ -62,6 +64,25 @@ def captura():
 @app.route('/etiquetas')
 def etiquetas():
     return 'building...'
+
+@app.route('/generar-pdf-etiquetas')
+@login_required
+def generate_labels():
+    sheety_url = app.config['SHEETY_PRICETAGS_URL']
+    bearer_token = app.config['SHEETY_PRICETAGS_BEARER']
+
+    try:
+        data = fetch_data_from_sheety(sheety_url, bearer_token)
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_pdf:
+            generate_pdf(data, temp_pdf.name)
+            temp_pdf_path = temp_pdf.name
+
+        return send_file(temp_pdf_path, as_attachment=True, download_name='labels.pdf')
+
+    except Exception as e:
+        app.logger.error(f"Error generating labels: {e}")
+        flash('Failed to generate labels. Please try again.', 'danger')
+        return redirect(url_for('index'))
 
 @app.route('/exportar-productos')
 @login_required
