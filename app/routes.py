@@ -6,7 +6,7 @@ from flask_login import login_required, current_user
 import sqlalchemy as sa
 from app import app, db
 from app.models import User, AdminAction
-from app.forms import UserSettingsForm
+from app.forms import UserSettingsForm, SubmitForm
 from app.sheety import fetch_sheet_data
 from app.price_tags import generate_pdf
 
@@ -62,6 +62,18 @@ def user_settings():
 @login_required
 def captura():
     return render_template('captura.html', title='Captura')
+
+@app.route('/actualizar_cantidades')
+@login_required
+def update_product_quantities():
+    form = SubmitForm()
+    form.submit.label.text = 'Subir a Shopify'
+
+    if form.validate_on_submit():
+        # TODO
+        pass
+
+    return render_template('actualizar_cantidades.html', form=form)
 
 @app.route('/etiquetas')
 def etiquetas():

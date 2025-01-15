@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1>Actualizar Cantidades y Precio de Productos</h1>
+
+<h2>Pasos</h2>
+
+<div class="d-flex justify-content-between align-items-end">
+  <ol class="mb-1">
+    <li>Poner claves (SKUs) que se necesitan actualizar en 
+      <a 
+        href="https://docs.google.com/spreadsheets/d/1OcvLWV5r_TPK8KOz1C3GkPQNZ7LbM3YiezJNCCM9xXc/edit?gid=0#gid=0" 
+        target="_blank" rel="noopener noreferrer"
+      >Google Sheets</a>
+    </li>
+    <li>Verificar que los productos sean correctos</li>
+    <li>Subir a Shopify &rarr;</li>
+  </ol>
+
+  <form action="" method="post" novalidate>
+    {{ form.hidden_tag() }}
+    {{ form.submit(class="btn btn-primary mb-1") }}
+  </form>
+</div>
+
+<hr>
+
+<table id="product-data" class="table">
+  <thead>
+    <tr>
+      <th scope="col">Clave (SKU)</th>
+      <th scope="col">Cantidad</th>
+      <th scope="col">Título</th>
+      <th scope="col">Proveedor</th>
+      <th scope="col">Nuevo Precio de Compra</th>
+      <th scope="col">Nuevo Precio de Venta</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th scope="row"></th>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+  </tbody>
+</table>
+
+{% endblock %}
+
+{% block scripts %}
+<!-- TODO: async script to load data in table when fetched. -->
+{% endblock %}
