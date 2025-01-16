@@ -7,6 +7,10 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
         'sqlite:///' + os.path.join(basedir, 'app.db')
     
+    SHOPIFY_STORE = os.getenv('TEST_SHOPIFY_STORE')
+    SHOPIFY_API_TOKEN = os.getenv('TEST_SHOPIFY_API_TOKEN') 
+    # TODO make another config class for real store and refactor to use flask's current_app
+    
     SHEETY_USERNAME=os.getenv('SHEETY_USERNAME')
     SHEETY_BEARER=os.getenv('SHEETY_BEARER')
     
