@@ -1,5 +1,6 @@
 app/static/pdfs
 resources/nginx_config.txt
+data
 
 *__pycache__*
 *.db

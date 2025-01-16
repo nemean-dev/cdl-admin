@@ -1,12 +1,22 @@
+<!-- 
+Requires:
+- refresh_form: SubmitForm
+- confirm_form: SubmitForm 
+
+Optional:
+- data: list[dict] Each dict represents a variant. Each variant has an 'error' 
+field that is set to 'none' if no errors
+-->
+
 {% extends 'base.html' %}
 
 {% block content %}
 
 <h1>Actualizar Cantidades y Precio de Productos</h1>
 
-<h2>Pasos</h2>
+<h2>Pasos temp: data {{ 'recieved' if data else 'NOT recieved' }}</h2>
 
-<div class="d-flex justify-content-between align-items-end">
+<div class="d-flex justify-content-between align-items-end flex-wrap">
   <ol class="mb-1">
     <li>Poner claves (SKUs) que se necesitan actualizar en 
       <a 
@@ -14,14 +24,25 @@
         target="_blank" rel="noopener noreferrer"
       >Google Sheets</a>
     </li>
+    <li>Click 'Actualizar en Google Sheets' &rarr;</li>
     <li>Verificar que los productos sean correctos</li>
-    <li>Subir a Shopify &rarr;</li>
+    <li>Click 'Subir a Shopify' &rarr;</li>
   </ol>
 
-  <form action="" method="post" novalidate>
-    {{ form.hidden_tag() }}
-    {{ form.submit(class="btn btn-primary mb-1") }}
-  </form>
+  <div class="d-flex flex-column">
+    {% if time %}<p class="text-secondary mb-1">Última actualización:<br>{{ time }}</p>{% endif %}
+    <div class="d-flex">
+      <form action="" method="post" novalidate>
+        {{ refresh_form.hidden_tag() }}
+        {{ refresh_form.submit(class="btn btn-primary") }}
+      </form>
+
+      <form action="{{ url_for('upload_product_quantities')}}" method="post" class="ms-3" novalidate>
+        {{ confirm_form.hidden_tag() }}
+        {{ confirm_form.submit(class="btn btn-primary", disabled=True) }}
+      </form>
+    </div>
+  </div>
 </div>
 
 <hr>
@@ -38,14 +59,32 @@
     </tr>
   </thead>
   <tbody>
+    {% if data %}
+    {% for row in data %}
+    
+    {% if row['errors'] == 'none' %}
     <tr>
-      <th scope="row"></th>
-      <td></td>
-      <td></td>
-      <td></td>
-      <td></td>
+      <td>{{ row['sku'] }} {{ qty }}</td>
+      <td>{{ row['quantity'] | default('NaN') }}</td>
+      <td>{{ row['displayName'] | default('NaN') }}</td>
+      <td>{{ row['vendor'] | default('NaN') }}</td>
+      <td>{{ row['newCost'] | default('NaN') }}</td>
+      <td>{{ row['newPrice'] | default('NaN') }}</td>
       <td></td>
     </tr>
+      
+    {% else %}
+    <tr class="table-danger">
+      <td>{{ row['sku'] }}</td>
+      <td colspan="5">{{ row['errors'] }}</td>
+    </tr>
+    {% endif %}
+    {% endfor %}
+    {% else %}
+    <tr>
+      <td colspan="6" class="text-center">No hay datos disponibles</td>
+    </tr>
+    {% endif %}
   </tbody>
 </table>
 
