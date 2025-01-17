@@ -40,16 +40,19 @@ def update_product_quantities():
     confirm_form.submit.label.text = 'Subir a Shopify'
 
     base_path = os.path.join(os.getcwd(), 'data/update_quantities')
+    quantities_file_path = os.path.join(base_path, 'quantities.csv')
+    timestamp_file_path = os.path.join(base_path, 'timestamp')
 
     if request.method == 'GET':
         try:
-            local_data = pd.read_csv('data/update_quantities/quantities.csv')
-            with open(os.path.join(base_path, 'timestamp'), 'r') as f:
+            local_data = pd.read_csv(quantities_file_path)
+            with open(timestamp_file_path, 'r') as f:
                 saved_time = float(f.read(50))
                 time = datetime.fromtimestamp(saved_time, 
                                                        tz=timezone.utc)
             total_errors = local_data.loc[local_data['errors'] != 'none', 'errors'].count()
-            flash(f'No es posible subir los productos actualmente ya que hay {total_errors} SKU con errores.', 'warning')
+            if total_errors:
+                flash(f'No es posible subir los productos actualmente: hay {total_errors} SKU con errores.', 'warning')
             data = json.loads(local_data.to_json(orient='records'))
 
         except FileNotFoundError:
@@ -65,6 +68,11 @@ def update_product_quantities():
 
         if sheety.shape[0] == 0:
             flash('No se encontraron productos en Google Sheets', 'error')
+            if os.path.exists(quantities_file_path):
+                os.remove(quantities_file_path)
+            if os.path.exists(timestamp_file_path):
+                os.remove(timestamp_file_path)
+
             return redirect(url_for('shop.update_product_quantities'))
         
         # csv cols: sku, qty, display_name, vendor, new_price, price_delta, new_cost, cost_delta
@@ -109,8 +117,8 @@ def update_product_quantities():
         
         # write combined data to csv for loading and add timestamp
         df = pd.DataFrame.from_records(combined_data)
-        df.to_csv(os.path.join(base_path, 'quantities.csv'))
-        with open(os.path.join(base_path, 'timestamp'), 'w') as f:
+        df.to_csv(quantities_file_path)
+        with open(timestamp_file_path, 'w') as f:
             now = datetime.now(timezone.utc)
             f.write(str(now.timestamp()))
 
