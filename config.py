@@ -8,6 +8,7 @@ class Config:
         'sqlite:///' + os.path.join(basedir, 'app.db')
     
     SHOPIFY_STORE = os.getenv('TEST_SHOPIFY_STORE')
+    SHOPIFY_LOCATION_ID = os.getenv('TEST_SHOPIFY_LOCATION_ID') 
     SHOPIFY_API_TOKEN = os.getenv('TEST_SHOPIFY_API_TOKEN') 
     # TODO make another config class for real store and refactor to use flask's current_app
     

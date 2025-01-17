@@ -1,33 +1,24 @@
 from typing import Union
 import requests
 # -------------- Not for testing -------------- #
-# from app import app
+from app import app
+import app.shop.graphql_queries as q
 
-# STORE = app.config['SHOPIFY_STORE']
-# API_TOKEN = app.config['SHOPIFY_API_TOKEN']
+STORE = app.config['SHOPIFY_STORE']
+API_TOKEN = app.config['SHOPIFY_API_TOKEN']
+LOCATION_ID = app.config['SHOPIFY_LOCATION_ID']
 # -------------- Not for testing -------------- #
 # -------------- Just for testing -------------- #
-import os
-from dotenv import load_dotenv
-load_dotenv('../')
-STORE = os.getenv('TEST_SHOPIFY_STORE')
-API_TOKEN = os.getenv('TEST_SHOPIFY_API_TOKEN')
+# import graphql_queries as q
+# import os
+# from dotenv import load_dotenv
+# load_dotenv('../')
+# STORE = os.getenv('TEST_SHOPIFY_STORE')
+# API_TOKEN = os.getenv('TEST_SHOPIFY_API_TOKEN')
+# LOCATION_ID = os.getenv('TEST_SHOPIFY_LOCATION_ID') 
 # -------------- Just for testing -------------- #
 
-TESTING_QUERY = '''
-query Test {
-  products(first: 3) {
-    edges {
-      node {
-        id
-        title
-      }
-    }
-  }
-}
-'''
-
-def graphql_query(query: str, input: str = None) -> requests.Response:
+def graphql_query(query: str, variables: dict = None) -> requests.Response:
     """
     To query the Shopify GraphQL API. Use with both queries and mutations.
     Returns response as is. Does not check for errors.
@@ -56,10 +47,10 @@ def graphql_query(query: str, input: str = None) -> requests.Response:
         "X-Shopify-Access-Token": API_TOKEN,
     }
 
-    if input:
+    if variables:
         payload = {
             'query': query,
-            'variables': input
+            'variables': variables
         }
     else:
         payload = { 'query': query }
@@ -85,27 +76,7 @@ def get_variants_by_sku(sku:str) -> list[dict]:
       }
     ]
     """
-    query = \
-"""
-{
-  productVariants(first: 3, query: "sku:%s") {
-    nodes {
-      id
-      product {
-        vendor
-      }
-      price
-      displayName
-      inventoryItem {
-        id
-        unitCost {
-          amount
-        }
-      }
-    }
-  }
-}
-""" % sku
+    query = q.get_variants_by_sku % sku
 
     res = graphql_query(query)
     data = res.json()['data']
@@ -134,28 +105,14 @@ def set_variant_cost(inventory_item_id:str, cost:float) -> requests.Response:
     product variant we wish to update
     - cost: in the store's default currency.
     """
-    query = '''
-mutation inventoryItemUpdate($id: ID!, $input: InventoryItemInput!) {
-  inventoryItemUpdate(id: $id, input: $input) {
-    inventoryItem {
-      id
-      unitCost {
-        amount
-      }
-    }
-    userErrors {
-      message
-    }
-  }
-}
-'''
-    input = {
+    query = q.set_variant_cost
+    variables = {
         "id": inventory_item_id,
         "input": {
             "cost": cost
         }
     }
-    res = graphql_query(query, input)
+    res = graphql_query(query, variables)
 
     return res
 
@@ -173,12 +130,74 @@ def set_variant_price(product_id:str, variant_id:Union[str, list[str]], price:Un
     if isinstance(variant_id, list):
         if not isinstance(price, list) or len(price) != len(variant_id):
             raise ValueError(
-                f"If 'variant_id' is a list, then 'price' must be a list of the same length.")
+                "If 'variant_id' is a list, then 'price' must be a list of the same length.")
+        
     else:
+        if not isinstance(price, (int, float)):
+            raise ValueError("If only one variant id was entered, price must be a single numerical value.")
+        
         variant_id, price = [variant_id], [price]
+    
+    variants = []
+    for i in range(len(variant_id)):
+        variants.append({
+            "id": variant_id[i],
+            "price": price[i]
+        })
 
-    # TODO
+    query = q.set_variant_price
+    variables = {
+        "productId": product_id,
+        "variants": variants
+    }
+    res = graphql_query(query, variables)
 
-if __name__ == "__main__":
-    res = set_variant_cost("gid://shopify/InventoryItem/52634988347710", 300)
-    print(res.text)
+    return res
+
+def adjust_variant_quantities(changes: list[dict], reason: str = 'received', name: str = 'available') -> requests.Response:
+    """
+    Adjust 'available' quainties for product variants.
+
+    Params:
+    - changes: a list of changes. Each change is a dict with 'inventoryItemId' 
+    and 'delta' (how many items to add/subract) keys. (Note: delta can be 
+    negative, in which case items will be subtracted. If so, change 'reson' to 
+    something other than 'received'; see Shopify docs for other options
+    - reason: the reason for the changes. 
+    See possible values: https://shopify.dev/docs/apps/build/orders-fulfillment/inventory-management-apps/manage-quantities-states#set-inventory-quantities-on-hand
+    - name: also see docs for possible names
+    
+    Example:
+    e.g. changes = [
+        {
+            "inventoryItemId": "gid://shopify/InventoryItem/1234567890"
+            "delta": 20
+        },
+        {
+            "inventoryItemId": "gid://shopify/InventoryItem/0987654321"
+            "delta": 33
+        },
+    ]
+    adjust_variant_quantities(changes=changes)
+    """
+    # TODO: perhaps make the referenceDocumentUri the URI of the AdminAction that made this change.
+    # see: https://shopify.dev/docs/api/admin-graphql/2025-01/mutations/inventoryAdjustQuantities
+    
+    # TODO: this will be unsuccessful if:
+    # 1. response is not 200 or
+    # 2. response is 200 but comes back with 'userErrors' != [] (not an empty list)
+    print("\n\n", LOCATION_ID)
+    changes_with_id = [
+        {**change, "locationId": LOCATION_ID} for change in changes
+    ]
+    query = q.adjust_variant_quantities
+    variables = {
+        "input": {
+            "reason": reason,
+            "name": name,
+            "changes": changes_with_id
+        }
+    }
+    res = graphql_query(query, variables)
+
+    return res

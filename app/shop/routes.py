@@ -133,6 +133,7 @@ def upload_product_quantities():
     # 1. upload products
     # 2. delete files in data/update_quantities
     # 3. delete rows from Google Sheets and put them in history
+    # 4. create admin action
 
     return redirect(url_for('shop.update_product_quantities'))
 
