@@ -77,7 +77,7 @@ def update_product_quantities():
         
         # csv cols: sku, qty, display_name, vendor, new_price, price_delta, new_cost, cost_delta
         combined_data = []
-        for _, row in sheety.iterrows():
+        for index, row in sheety.iterrows():
             sku = row['clave (sku)']
             new_price = row['nuevoPrecioVenta']
             new_cost = row['nuevoPrecioCompra']
@@ -91,11 +91,24 @@ def update_product_quantities():
                     'errors': f'Hay más de un producto con clave "{sku}".'
                 })
                 continue
-
             elif len(variants) == 0:
                 combined_data.append({
                     'sku': sku,
                     'errors': f'No se encontró ningún producto con clave "{sku}".'
+                })
+                continue
+            elif new_price and not (isinstance(new_price, (int, float)) and 
+                                    (0 < new_price <= 7000 or new_price != new_price)): # x != x is true if x is nan!
+                combined_data.append({
+                    'sku': sku,
+                    'errors': f'No es válido el precio de venta ingresado en este renglón (renglón {index + 2}).',
+                })
+                continue
+            elif new_cost and not (isinstance(new_cost, (int, float)) and 
+                                   (0 < new_cost <= 20000 or new_cost != new_cost)):
+                combined_data.append({
+                    'sku': sku,
+                    'errors': f'No es válido el precio de compra ingresado en el renglón {index + 2}.'
                 })
                 continue
             
@@ -104,7 +117,7 @@ def update_product_quantities():
             # row is from Google Sheets and variant is the corresponding Shopify productVariant
             combined_product_data = {
                 'sku': sku, 
-                'quantity': row['cantidadAAgregar'], 
+                'quantity': int(row['cantidadAAgregar']), 
                 'displayName': variant['displayName'],
                 'vendor': variant['vendor'],
                 'newPrice': new_price if new_price else nan,
