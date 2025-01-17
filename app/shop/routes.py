@@ -61,7 +61,7 @@ def update_product_quantities():
 
         return render_template('actualizar_cantidades.html', 
                            refresh_form=refresh_form, confirm_form=confirm_form, 
-                           data=data, time=time)
+                           data=data, time=time, enable_upload=(total_errors==0))
     
     if refresh_form.validate_on_submit():
         sheety = fetch_sheet_data('actualizarCantidades', 'cantidades')        
@@ -79,6 +79,7 @@ def update_product_quantities():
         combined_data = []
         for index, row in sheety.iterrows():
             sku = row['clave (sku)']
+            if not sku or sku != sku: continue
             new_price = row['nuevoPrecioVenta']
             new_cost = row['nuevoPrecioCompra']
 

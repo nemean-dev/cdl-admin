@@ -6,12 +6,18 @@ Requires:
 Optional:
 - data: list[dict] Each dict represents a variant. Each variant has an 'error' 
 field that is set to 'none' if no errors
+- time: timestamp of last refresh
+- enable_upload: True if upload button is to be enabled
 -->
 
 {% extends 'base.html' %}
 
 {% block content %}
-
+{% if enable_upload %}
+{% set enable_button = enable_upload %}
+{% else %}
+{% set enable_button = False %}
+{% endif %}
 <h1>Actualizar Cantidades y Precio de Productos</h1>
 
 <h2>Pasos temp: data {{ 'recieved' if data else 'NOT recieved' }}</h2>
@@ -39,7 +45,7 @@ field that is set to 'none' if no errors
 
       <form action="{{ url_for('shop.upload_product_quantities')}}" method="post" class="ms-3" novalidate>
         {{ confirm_form.hidden_tag() }}
-        {{ confirm_form.submit(class="btn btn-primary", disabled=True) }}
+        {{ confirm_form.submit(class="btn btn-primary") if enable_button else confirm_form.submit(class="btn btn-primary", disabled=True) }}
       </form>
     </div>
   </div>
