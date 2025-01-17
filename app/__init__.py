@@ -18,4 +18,4 @@ app.register_blueprint(auth_bp)
 from app.shop import bp as shop_bp
 app.register_blueprint(shop_bp)
 
-from app import routes, models
+from app import routes, models, errors
