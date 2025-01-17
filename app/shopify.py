@@ -2,6 +2,18 @@ import pandas as pd
 import requests
 from app import app
 
+STORE = app.config['SHOPIFY_STORE']
+API_TOKEN = app.config['SHOPIFY_API_TOKEN']
+
+
+# -------------- Just for testing -------------- #
+# import os
+# from dotenv import load_dotenv
+# load_dotenv('../')
+# STORE = os.getenv('TEST_SHOPIFY_STORE')
+# API_TOKEN = os.getenv('TEST_SHOPIFY_API_TOKEN')
+# -------------- Just for testing -------------- #
+
 TESTING_QUERY = '''
 query Test {
   products(first: 3) {
@@ -38,20 +50,21 @@ def graphql_query(query: str, input: str = None) -> requests.Response:
     '''
     response = graphql_query(query=query)
     """
-    url = f"https://{app.config['SHOPIFY_STORE']}.myshopify.com/admin/api/2025-01/graphql.json"
+    url = f"https://{STORE}.myshopify.com/admin/api/2025-01/graphql.json"
     headers = {
         "Content-Type": "application/json",
-        "X-Shopify-Access-Token": app.config['SHOPIFY_API_TOKEN'],
+        "X-Shopify-Access-Token": API_TOKEN,
     }
 
     if input:
         payload = {
             'query': query,
-            'input': input
+            'variables': input
         }
-        res = requests.post(url=url, headers=headers, json=payload)
     else:
-        res = requests.post(url=url, headers=headers, json={"query": query})
+        payload = { 'query': query }
+        
+    res = requests.post(url=url, headers=headers, json=payload)
 
     return res
 
@@ -111,3 +124,41 @@ def get_variants_by_sku(sku:str) -> list[dict]:
         variants.append(variant_data)
 
     return variants
+
+def set_variant_cost(inventory_item_id, cost) -> requests.Response:
+    """
+    Sets the unitCost for a product variant.
+
+    Params:
+    - inventory_item_id: the id of the inventory item corresponding to the 
+    product variant we wish to update
+    - cost: in the store's default currency.
+    """
+    query = '''
+mutation inventoryItemUpdate($id: ID!, $input: InventoryItemInput!) {
+  inventoryItemUpdate(id: $id, input: $input) {
+    inventoryItem {
+      id
+      unitCost {
+        amount
+      }
+    }
+    userErrors {
+      message
+    }
+  }
+}
+'''
+    input = {
+        "id": inventory_item_id,
+        "input": {
+            "cost": cost
+        }
+    }
+    res = graphql_query(query, input)
+
+    return res
+
+# if __name__ == "__main__":
+#     res = set_variant_cost("gid://shopify/InventoryItem/52634988347710", 300)
+#     print(res.text)

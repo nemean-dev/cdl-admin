@@ -108,6 +108,8 @@ def update_product_quantities():
             sku = row['clave (sku)']
             new_price = row['nuevoPrecioVenta']
             new_cost = row['nuevoPrecioCompra']
+
+            # Query shopify for the variant corresponding to this SKU
             variants = get_variants_by_sku(sku)
 
             if len(variants) >= 2:
