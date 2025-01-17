@@ -1,5 +1,6 @@
 from typing import Union
 import requests
+from numpy import nan
 # -------------- Not for testing -------------- #
 from app import app
 import app.shop.graphql_queries as q
@@ -83,13 +84,15 @@ def get_variants_by_sku(sku:str) -> list[dict]:
 
     variants = []
     for variant in data['productVariants']['nodes']:
+        unit_cost = variant['inventoryItem']['unitCost']
+        unit_cost = unit_cost['amount'] if unit_cost else nan
         variant_data = {
             "sku": sku,
             "variantId": variant['id'],
             "displayName": variant['displayName'],
             "vendor": variant['product']['vendor'],
             "price": variant['price'],
-            "unitCost": variant['inventoryItem']['unitCost']['amount'],
+            "unitCost": unit_cost,
             "inventoryItemId": variant['inventoryItem']['id'],
         }
         variants.append(variant_data)
