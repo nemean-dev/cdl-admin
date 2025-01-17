@@ -10,7 +10,7 @@ from app.forms import SubmitForm
 from app.shop import bp
 from app.shop.price_tags import generate_pdf
 from app.shop.sheety import fetch_sheet_data
-from app.shop.shopify import get_variants_by_sku
+from app.shop.inventory_updates import get_local_inventory, delete_local_inventory, write_local_inventory, complete_sheety_data
 
 @bp.route('/generar-pdf-etiquetas')
 @login_required
@@ -39,102 +39,34 @@ def update_product_quantities():
     refresh_form.submit.label.text = 'Actualizar desde Google Sheets'
     confirm_form.submit.label.text = 'Subir a Shopify'
 
-    base_path = os.path.join(os.getcwd(), 'data/update_quantities')
-    quantities_file_path = os.path.join(base_path, 'quantities.csv')
-    timestamp_file_path = os.path.join(base_path, 'timestamp')
-
     if request.method == 'GET':
-        try:
-            local_data = pd.read_csv(quantities_file_path)
-            with open(timestamp_file_path, 'r') as f:
-                saved_time = float(f.read(50))
-                time = datetime.fromtimestamp(saved_time, 
-                                                       tz=timezone.utc)
-            total_errors = local_data.loc[local_data['errors'] != 'none', 'errors'].count()
+        df, time = get_local_inventory()
+        data = None
+        enable_upload_btn = False
+
+        if df is not None and df.shape[0] > 0:
+            total_errors = df.loc[df['errors'] != 'none', 'errors'].count()
             if total_errors:
                 flash(f'No es posible subir los productos actualmente: hay {total_errors} SKU con errores.', 'warning')
-            data = json.loads(local_data.to_json(orient='records'))
 
-        except FileNotFoundError:
-            data = None
-            time = None
+            data = json.loads(df.to_json(orient='records'))
+            enable_upload_btn=(total_errors==0)
 
         return render_template('actualizar_cantidades.html', 
-                           refresh_form=refresh_form, confirm_form=confirm_form, 
-                           data=data, time=time, enable_upload=(total_errors==0))
+                        refresh_form=refresh_form, confirm_form=confirm_form, 
+                        data=data, time=time, enable_upload=enable_upload_btn)
     
     if refresh_form.validate_on_submit():
         sheety = fetch_sheet_data('actualizarCantidades', 'cantidades')        
 
         if sheety.shape[0] == 0:
             flash('No se encontraron productos en Google Sheets', 'error')
-            if os.path.exists(quantities_file_path):
-                os.remove(quantities_file_path)
-            if os.path.exists(timestamp_file_path):
-                os.remove(timestamp_file_path)
+            delete_local_inventory()
 
             return redirect(url_for('shop.update_product_quantities'))
         
-        # csv cols: sku, qty, display_name, vendor, new_price, price_delta, new_cost, cost_delta
-        combined_data = []
-        for index, row in sheety.iterrows():
-            sku = row['clave (sku)']
-            if not sku or sku != sku: continue
-            new_price = row['nuevoPrecioVenta']
-            new_cost = row['nuevoPrecioCompra']
-
-            # Query shopify for the variant corresponding to this SKU
-            variants = get_variants_by_sku(sku)
-
-            if len(variants) >= 2:
-                combined_data.append({
-                    'sku': sku,
-                    'errors': f'Hay más de un producto con clave "{sku}".'
-                })
-                continue
-            elif len(variants) == 0:
-                combined_data.append({
-                    'sku': sku,
-                    'errors': f'No se encontró ningún producto con clave "{sku}".'
-                })
-                continue
-            elif new_price and not (isinstance(new_price, (int, float)) and 
-                                    (0 < new_price <= 7000 or new_price != new_price)): # x != x is true if x is nan!
-                combined_data.append({
-                    'sku': sku,
-                    'errors': f'No es válido el precio de venta ingresado en este renglón (renglón {index + 2}).',
-                })
-                continue
-            elif new_cost and not (isinstance(new_cost, (int, float)) and 
-                                   (0 < new_cost <= 20000 or new_cost != new_cost)):
-                combined_data.append({
-                    'sku': sku,
-                    'errors': f'No es válido el precio de compra ingresado en el renglón {index + 2}.'
-                })
-                continue
-            
-            variant = variants[0]
-            
-            # row is from Google Sheets and variant is the corresponding Shopify productVariant
-            combined_product_data = {
-                'sku': sku, 
-                'quantity': int(row['cantidadAAgregar']), 
-                'displayName': variant['displayName'],
-                'vendor': variant['vendor'],
-                'newPrice': new_price if new_price else nan,
-                'priceDelta': new_price - float(variant['price']) if new_price else nan,
-                'newCost': new_cost if new_cost else nan,
-                'costDelta': new_cost - float(variant['unitCost']) if new_cost else nan,
-                'errors': 'none',
-            }
-            combined_data.append(combined_product_data)
-        
-        # write combined data to csv for loading and add timestamp
-        df = pd.DataFrame.from_records(combined_data)
-        df.to_csv(quantities_file_path)
-        with open(timestamp_file_path, 'w') as f:
-            now = datetime.now(timezone.utc)
-            f.write(str(now.timestamp()))
+        df = complete_sheety_data(sheety)
+        write_local_inventory(df)
 
         return redirect(url_for('shop.update_product_quantities'))
     
@@ -148,6 +80,8 @@ def upload_product_quantities():
     # 2. delete files in data/update_quantities
     # 3. delete rows from Google Sheets and put them in history
     # 4. create admin action
+
+    df, timestamp = get_local_inventory()
 
     return redirect(url_for('shop.update_product_quantities'))
 
