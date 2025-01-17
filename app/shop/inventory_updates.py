@@ -10,11 +10,12 @@ base_path = os.path.join(os.getcwd(), 'data/update_quantities')
 quantities_file_path = os.path.join(base_path, 'quantities.csv')
 timestamp_file_path = os.path.join(base_path, 'timestamp')
 
-def get_local_inventory() -> tuple[Optional[pd.DataFrame], Optional[str]]:
+def get_local_inventory() -> tuple[pd.DataFrame, str, int]:
     """
     Returns a tuple with: 
     - the records stored in 'data/update_quantities/quantities.csv'
     - the time represented by the timestamp stored in 'data/update_quantities/timestamp'
+    - the number of errors
     
     Both are None if files missing.
     """
@@ -23,12 +24,14 @@ def get_local_inventory() -> tuple[Optional[pd.DataFrame], Optional[str]]:
         with open(timestamp_file_path, 'r') as f:
             saved_time = float(f.read(50))
             time = datetime.fromtimestamp(saved_time, tz=timezone.utc)
+        total_errors = data.loc[data['errors'] != 'none', 'errors'].count()
         
     except FileNotFoundError:
         data = None
         time = None
+        total_errors = 0
 
-    return data, time
+    return data, time, total_errors
 
 def delete_local_inventory():
     if os.path.exists(quantities_file_path):
@@ -94,6 +97,9 @@ def complete_sheety_data(sheety_df: pd.DataFrame) -> pd.DataFrame:
             'newCost': new_cost if new_cost else nan,
             'costDelta': new_cost - float(variant['unitCost']) if new_cost else nan,
             'errors': 'none',
+            'variantId': variant['variantId'],
+            'productId': variant['productId'],
+            'inventoryItemId': variant['inventoryItemId'],
         }
         combined_data.append(combined_product_data)
     

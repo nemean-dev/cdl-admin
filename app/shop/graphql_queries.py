@@ -19,6 +19,7 @@ get_variants_by_sku=\
     nodes {
       id
       product {
+        id
         vendor
       }
       price
