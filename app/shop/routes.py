@@ -10,6 +10,7 @@ from app.forms import SubmitForm
 from app.shop import bp
 from app.shop.price_tags import generate_pdf
 from app.shop.sheety import fetch_sheet_data
+from app.shop.shopify import adjust_variant_quantities
 from app.shop.inventory_updates import get_local_inventory, delete_local_inventory, write_local_inventory, complete_sheety_data
 
 @bp.route('/generar-pdf-etiquetas')
@@ -40,12 +41,11 @@ def update_product_quantities():
     confirm_form.submit.label.text = 'Subir a Shopify'
 
     if request.method == 'GET':
-        df, time = get_local_inventory()
+        df, time, total_errors = get_local_inventory()
         data = None
         enable_upload_btn = False
 
         if df is not None and df.shape[0] > 0:
-            total_errors = df.loc[df['errors'] != 'none', 'errors'].count()
             if total_errors:
                 flash(f'No es posible subir los productos actualmente: hay {total_errors} SKU con errores.', 'warning')
 
@@ -81,7 +81,23 @@ def upload_product_quantities():
     # 3. delete rows from Google Sheets and put them in history
     # 4. create admin action
 
-    df, timestamp = get_local_inventory()
+    quantities, timestamp, total_errors = get_local_inventory()
+    if total_errors > 0:
+        flash('Cannot post data with errors.', 'error')
+    
+    # TODO: check for updates in sheety before adjusting
+
+    changes = [ 
+        {
+            'inventoryItemId': row['inventoryItemId'],
+            'delta': row['quantity']
+        }
+        for _, row in quantities.iterrows()
+    ]
+    print('\n\n\n')
+    res = adjust_variant_quantities(changes)
+    print(res)
+    print(res.text)
 
     return redirect(url_for('shop.update_product_quantities'))
 
