@@ -1,17 +1,17 @@
-import pandas as pd
+from typing import Union
 import requests
-from app import app
+# -------------- Not for testing -------------- #
+# from app import app
 
-STORE = app.config['SHOPIFY_STORE']
-API_TOKEN = app.config['SHOPIFY_API_TOKEN']
-
-
+# STORE = app.config['SHOPIFY_STORE']
+# API_TOKEN = app.config['SHOPIFY_API_TOKEN']
+# -------------- Not for testing -------------- #
 # -------------- Just for testing -------------- #
-# import os
-# from dotenv import load_dotenv
-# load_dotenv('../')
-# STORE = os.getenv('TEST_SHOPIFY_STORE')
-# API_TOKEN = os.getenv('TEST_SHOPIFY_API_TOKEN')
+import os
+from dotenv import load_dotenv
+load_dotenv('../')
+STORE = os.getenv('TEST_SHOPIFY_STORE')
+API_TOKEN = os.getenv('TEST_SHOPIFY_API_TOKEN')
 # -------------- Just for testing -------------- #
 
 TESTING_QUERY = '''
@@ -125,7 +125,7 @@ def get_variants_by_sku(sku:str) -> list[dict]:
 
     return variants
 
-def set_variant_cost(inventory_item_id, cost) -> requests.Response:
+def set_variant_cost(inventory_item_id:str, cost:float) -> requests.Response:
     """
     Sets the unitCost for a product variant.
 
@@ -159,6 +159,26 @@ mutation inventoryItemUpdate($id: ID!, $input: InventoryItemInput!) {
 
     return res
 
-# if __name__ == "__main__":
-#     res = set_variant_cost("gid://shopify/InventoryItem/52634988347710", 300)
-#     print(res.text)
+def set_variant_price(product_id:str, variant_id:Union[str, list[str]], price:Union[float, list[float]]) -> requests.Response:
+    """
+    Sets the price for a product variant, or for multiple product variants if 
+    they all belong to the same product.
+
+    Params:
+    - product_id
+    - variant_id: a single id string or a list of IDs. In any case, the variants
+    must belong to the product associated wth the product_id.
+    - price: a single price or a list of prices of the same length as variant_id
+    """
+    if isinstance(variant_id, list):
+        if not isinstance(price, list) or len(price) != len(variant_id):
+            raise ValueError(
+                f"If 'variant_id' is a list, then 'price' must be a list of the same length.")
+    else:
+        variant_id, price = [variant_id], [price]
+
+    # TODO
+
+if __name__ == "__main__":
+    res = set_variant_cost("gid://shopify/InventoryItem/52634988347710", 300)
+    print(res.text)

@@ -15,4 +15,7 @@ login.login_message = 'Necesitas inciar sesión para acceder a esta página'
 from app.auth import bp as auth_bp
 app.register_blueprint(auth_bp)
 
+from app.shop import bp as shop_bp
+app.register_blueprint(shop_bp)
+
 from app import routes, models
