@@ -1,15 +1,13 @@
 import os
 import json
 from datetime import datetime, timezone
-import pandas as pd
-from numpy import nan
 from flask import redirect, url_for, request, flash, render_template, send_file
 from flask_login import login_required
 from app import app
 from app.forms import SubmitForm
 from app.shop import bp
 from app.shop.price_tags import generate_pdf
-from app.shop.sheety import fetch_sheet_data
+from app.shop.sheety import fetch_sheet_data, clear_inventory_updates_sheet
 from app.shop.shopify import adjust_variant_quantities
 from app.shop.inventory_updates import get_local_inventory, delete_local_inventory, write_local_inventory, complete_sheety_data
 
@@ -79,13 +77,16 @@ def upload_product_quantities():
     # 1. upload products
     # 2. delete files in data/update_quantities
     # 3. delete rows from Google Sheets and put them in history
+            # in google apps script: 
+            # - select rows that have a sku value 
+            # - move the contents to history (ignoring 'notas' A-column) 
+            # - clear 'cantidades
     # 4. create admin action
-
     quantities, timestamp, total_errors = get_local_inventory()
     if total_errors > 0:
         flash('Cannot post data with errors.', 'error')
     
-    # TODO: check for updates in sheety before adjusting
+    # TODO: check for updates in sheety before adjusting. Don't do it if timestamp is very recent.
 
     changes = [ 
         {
@@ -94,10 +95,10 @@ def upload_product_quantities():
         }
         for _, row in quantities.iterrows()
     ]
-    print('\n\n\n')
+
     res = adjust_variant_quantities(changes)
-    print(res)
-    print(res.text)
+
+    clear_inventory_updates_sheet()
 
     return redirect(url_for('shop.update_product_quantities'))
 
