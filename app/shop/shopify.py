@@ -63,7 +63,6 @@ def graphql_query(query: str, variables: dict = None) -> requests.Response:
         if res.json().get('errors'):
             raise ShopifyQueryError(f'There was an error with the GraphQL query: {str(res.json()['errors'])}')
 
-    # TODO: can I return 'res' after catching any of these exception?
     except HTTPError as e:
         if res.status_code < 500:
             app.logger.error(f"HTTP client error occurred: {e}")  # 4xx, 5xx errors raised by raise_for_status()

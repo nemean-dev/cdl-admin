@@ -23,7 +23,6 @@ def index():
 def action_log():
     actions = db.session.scalars(sa.select(AdminAction)).all()
     return render_template('action_log.html', actions=actions) #TODO add pagination here and in the user profiles
-    #TODO: add number id to action log and proper spacing
 
 @app.route('/user/<id>')
 @login_required

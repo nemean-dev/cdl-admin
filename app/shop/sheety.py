@@ -15,7 +15,6 @@ def fetch_sheet_data(spreadsheet_name, sheet_name) -> pd.DataFrame:
     response = requests.get(url, headers=headers)
     response.raise_for_status()
     return pd.DataFrame(response.json().get(sheet_name, []))
-    # TODO: stop using this function outside this module
 
 def fetch_etiquetas():
     return fetch_sheet_data('etiquetas', 'etiquetas')

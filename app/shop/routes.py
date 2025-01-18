@@ -8,7 +8,7 @@ from app.forms import SubmitForm
 from app.models import AdminAction
 from app.shop import bp
 from app.shop.price_tags import generate_pdf
-from app.shop.sheety import fetch_sheet_data, clear_inventory_updates_sheet
+from app.shop.sheety import clear_inventory_updates_sheet, fetch_etiquetas, fetch_inventory_updates
 from app.shop.shopify import adjust_variant_quantities, set_variant_price, set_variant_cost
 from app.shop.inventory_updates import get_local_inventory, delete_local_inventory, write_local_inventory, complete_sheety_data
 
@@ -16,7 +16,7 @@ from app.shop.inventory_updates import get_local_inventory, delete_local_invento
 @login_required
 def generate_labels():
     try:
-        data = fetch_sheet_data('etiquetas', 'etiquetas')
+        data = fetch_etiquetas()
         
         timestamp = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
         pdf_filename = f"labels_{timestamp}.pdf"
@@ -56,7 +56,7 @@ def update_product_quantities():
                         data=data, time=time, enable_upload=enable_upload_btn)
     
     if refresh_form.validate_on_submit():
-        sheety = fetch_sheet_data('actualizarCantidades', 'cantidades')        
+        sheety = fetch_inventory_updates('actualizarCantidades', 'cantidades')        
 
         if sheety.shape[0] == 0:
             flash('No se encontraron productos en Google Sheets', 'error')
@@ -72,7 +72,7 @@ def update_product_quantities():
 @bp.route('/subir_inventario_shopify', methods=['POST'])
 @login_required
 def upload_product_quantities():
-    # TODO: dirty but working... needs a lot of refactoring
+    # TODO: view is dirty but working... needs a lot of refactoring
     df, timestamp, total_errors = get_local_inventory()
     if total_errors > 0:
         flash('Cannot post data with errors.', 'error')

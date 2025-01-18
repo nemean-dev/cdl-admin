@@ -43,7 +43,7 @@ def logout():
 def register_users():
     if not current_user.is_superadmin:
         flash("You do not have permission to access this page.", "warning")
-        return redirect(url_for('index'))#TODO test and flash a warning
+        return redirect(url_for('index'))
     
     form = RegisterUsersForm()
 
@@ -51,7 +51,6 @@ def register_users():
         email = form.email.data
         if db.session.scalar(sa.select(User).where(User.email == email)) is not None:
             flash(f'Error: User for {email} already exists.', "warning")
-            #TODO: make this flashed message be red or yellow. How to do warnings?
             return redirect(url_for('auth.register_users'))
 
         fname, lname, password = \
