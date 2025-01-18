@@ -2,9 +2,10 @@ import os
 import json
 from datetime import datetime, timezone
 from flask import redirect, url_for, request, flash, render_template, send_file
-from flask_login import login_required
-from app import app
+from flask_login import login_required, current_user
+from app import app, db
 from app.forms import SubmitForm
+from app.models import AdminAction
 from app.shop import bp
 from app.shop.price_tags import generate_pdf
 from app.shop.sheety import fetch_sheet_data, clear_inventory_updates_sheet
@@ -85,18 +86,26 @@ def upload_product_quantities():
     quantities, timestamp, total_errors = get_local_inventory()
     if total_errors > 0:
         flash('Cannot post data with errors.', 'error')
+        return redirect(url_for('update_product_quantities'))
     
     # TODO: check for updates in sheety before adjusting. Don't do it if timestamp is very recent.
 
-    changes = [ 
+    changes = [
         {
             'inventoryItemId': row['inventoryItemId'],
             'delta': row['quantity']
-        }
-        for _, row in quantities.iterrows()
-    ]
-
-    res = adjust_variant_quantities(changes)
+        } 
+        for _, row in quantities.iterrows() ]
+    
+    try:
+        adjust_variant_quantities(changes)
+    except:
+        flash('Fracasó el intento de actualizar el inventario. Si el error persiste, contacta a un administrador.')
+        return redirect(url_for('update_product_quantities'))
+    
+    new_action = AdminAction(action="Actualizar cantidades de inventario", status='Completado', admin=current_user)
+    db.session.add(new_action)
+    db.session.commit()
 
     clear_inventory_updates_sheet()
 
