@@ -9,7 +9,7 @@ from app.models import AdminAction
 from app.shop import bp
 from app.shop.price_tags import generate_pdf
 from app.shop.sheety import fetch_sheet_data, clear_inventory_updates_sheet
-from app.shop.shopify import adjust_variant_quantities
+from app.shop.shopify import adjust_variant_quantities, set_variant_price, set_variant_cost
 from app.shop.inventory_updates import get_local_inventory, delete_local_inventory, write_local_inventory, complete_sheety_data
 
 @bp.route('/generar-pdf-etiquetas')
@@ -72,41 +72,78 @@ def update_product_quantities():
 @bp.route('/subir_inventario_shopify', methods=['POST'])
 @login_required
 def upload_product_quantities():
-    # TODO: admin action
-    # we need the location Id. See: https://shopify.dev/docs/api/admin-graphql/2025-01/mutations/inventoryAdjustQuantities
-
-    # 1. upload products
-    # 2. delete files in data/update_quantities
-    # 3. delete rows from Google Sheets and put them in history
-            # in google apps script: 
-            # - select rows that have a sku value 
-            # - move the contents to history (ignoring 'notas' A-column) 
-            # - clear 'cantidades
-    # 4. create admin action
-    quantities, timestamp, total_errors = get_local_inventory()
+    # TODO: dirty but working... needs a lot of refactoring
+    df, timestamp, total_errors = get_local_inventory()
     if total_errors > 0:
         flash('Cannot post data with errors.', 'error')
         return redirect(url_for('update_product_quantities'))
     
     # TODO: check for updates in sheety before adjusting. Don't do it if timestamp is very recent.
 
-    changes = [
+    # UPDATE INVENTORY QUANTITIES
+    quantity_changes = [
         {
             'inventoryItemId': row['inventoryItemId'],
             'delta': row['quantity']
         } 
-        for _, row in quantities.iterrows() ]
-    
+        for _, row in df.iterrows() ]
     try:
-        adjust_variant_quantities(changes)
+        adjust_variant_quantities(quantity_changes)
+        pass
     except:
-        flash('Fracasó el intento de actualizar el inventario. Si el error persiste, contacta a un administrador.')
+        flash('Fracasó el intento de actualizar el inventario. Si el error persiste, contacta a un administrador.', 'error')
         return redirect(url_for('update_product_quantities'))
     
-    new_action = AdminAction(action="Actualizar cantidades de inventario", status='Completado', admin=current_user)
-    db.session.add(new_action)
+    flash("Se actualizaron las cantidades correctamente.")
+    update_quantities_action = AdminAction(action="Actualizar cantidades de inventario", status='Completado', admin=current_user)
+    db.session.add(update_quantities_action)
     db.session.commit()
 
+    # UPDATE PRODUCT PRICE
+    price_changes = df.loc[~df['newPrice'].isna()]
+    update_prices_action = AdminAction(action="Actualizar precios de venta de variantes", status='En progreso', admin=current_user)
+    db.session.add(update_prices_action)
+    db.session.commit()
+    error_skus = []
+    for _, row in price_changes.iterrows():
+        try:
+            set_variant_price(row['productId'], row['variantId'],row['newPrice'])
+        except:
+            error_skus += row['sku']
+            update_prices_action.errors += f"{row['sku']},"
+            continue
+    if error_skus:
+        flash(f'Hubieron problemas al actualizar los precios de venta de algunos productos. Por favor actualízalos a mano. \nskus: {", ".join(error_skus)}', 'error')
+        update_prices_action.status = 'Incompleto'
+    else:
+        flash('Se actualizaron los precios de venta correctamente')
+        update_prices_action.status = 'Completado'
+    db.session.add(update_prices_action)
+    db.session.commit()
+
+    # UPDATE PRODUCT COST
+    cost_changes = df.loc[~df['newCost'].isna()]
+    update_costs_action = AdminAction(action="Actualizar precios de compra de variantes", status='En progreso', admin=current_user)
+    db.session.add(update_costs_action)
+    db.session.commit()
+    error_skus = []
+    for _, row in cost_changes.iterrows():
+        try:
+            set_variant_cost(row['inventoryItemId'], row['newCost'])
+        except:
+            error_skus += row['sku']
+            update_costs_action.errors += f"{row['sku']},"
+            continue
+    if error_skus:
+        flash(f'Hubieron problemas al actualizar los precios de compra de algunos productos. Por favor actualízalos a mano. \nskus: {", ".join(error_skus)}', 'error')
+        update_prices_action.status = 'Incompleto'
+    else:
+        flash('Se actualizaron los precios de compra correctamente')
+        update_prices_action.status = 'Completado'
+    db.session.add(update_prices_action)
+    db.session.commit()
+
+    # CLEAR GOOGLE SHEETS SPREADSHEET
     clear_inventory_updates_sheet()
 
     return redirect(url_for('shop.update_product_quantities'))
