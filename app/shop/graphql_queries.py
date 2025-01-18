@@ -74,6 +74,7 @@ mutation adjustVariantsQuantities($input: InventoryAdjustQuantitiesInput!) {
   inventoryAdjustQuantities(input: $input) {
     userErrors {
       field
+      message
     }
     inventoryAdjustmentGroup {
       createdAt

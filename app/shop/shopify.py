@@ -1,46 +1,33 @@
 from typing import Union
 import requests
+from requests.exceptions import HTTPError, ConnectionError, Timeout, RequestException
 from numpy import nan
-# -------------- Not for testing -------------- #
 from app import app
 import app.shop.graphql_queries as q
 
 STORE = app.config['SHOPIFY_STORE']
 API_TOKEN = app.config['SHOPIFY_API_TOKEN']
 LOCATION_ID = app.config['SHOPIFY_LOCATION_ID']
-# -------------- Not for testing -------------- #
-# -------------- Just for testing -------------- #
-# import graphql_queries as q
-# import os
-# from dotenv import load_dotenv
-# load_dotenv('../')
-# STORE = os.getenv('TEST_SHOPIFY_STORE')
-# API_TOKEN = os.getenv('TEST_SHOPIFY_API_TOKEN')
-# LOCATION_ID = os.getenv('TEST_SHOPIFY_LOCATION_ID') 
-# -------------- Just for testing -------------- #
+
+class ShopifyQueryError(Exception):
+    """
+    Custom exception for Shopify GraphQL queries where the query syntax was incorrect.
+    Usually response.json() will contain field 'errors'.
+    """
+    pass
+class ShopifyUserError(Exception):
+    """
+    Custom exception for errors in Shopify GraphQL mutations where 'userErrors'
+    list exists and is not empty.
+    """
+    pass
 
 def graphql_query(query: str, variables: dict = None) -> requests.Response:
     """
     To query the Shopify GraphQL API. Use with both queries and mutations.
-    Returns response as is. Does not check for errors.
-    
-    Params
-    - query is any valid GraphQL query. See example below.
+    Returns response as is and a boolean that is True if any errors were found.
 
-    Example
-    query = '''\\
-    {
-        products(first: 3) {
-            edges {
-            node {
-                id
-                title
-            }
-            }
-        }
-    }
-    '''
-    response = graphql_query(query=query)
+    e.g. res, has_errors = graphql_query(q, vars)
     """
     url = f"https://{STORE}.myshopify.com/admin/api/2025-01/graphql.json"
     headers = {
@@ -55,8 +42,33 @@ def graphql_query(query: str, variables: dict = None) -> requests.Response:
         }
     else:
         payload = { 'query': query }
-        
-    res = requests.post(url=url, headers=headers, json=payload)
+    
+    try:
+        res = requests.post(url=url, headers=headers, json=payload)
+        res.raise_for_status()
+
+        if res.json().get('errors'):
+            raise ShopifyQueryError(f'There was an error with the GraphQL query: {str(res.json()['errors'])}')
+
+    # TODO: can I return 'res' after catching any of these exception?
+    except HTTPError as e:
+        if res.status_code < 500:
+            app.logger.error(f"HTTP client error occurred: {e}")  # 4xx, 5xx errors raised by raise_for_status()
+        else:
+            app.logger.warning(f"HTTP server error occurred: {e}") 
+        raise
+    except ConnectionError as e:
+        app.logger.warning(f"Connection error occurred: {e}")  # Network problems
+        raise
+    except Timeout as e:
+        app.logger.warning(f"Timeout error occurred: {e}")  # Timeout
+        raise
+    except RequestException as e:
+        app.logger.error(f"An error occurred: {e}")  # Catch-all for other request exceptions
+        raise
+    except ShopifyQueryError as e:
+        app.logger.error(f"GraphQL query error occured: {e}")
+        raise
 
     return res
 
@@ -158,7 +170,7 @@ def set_variant_price(product_id:str, variant_id:Union[str, list[str]], price:Un
 
     return res
 
-def adjust_variant_quantities(changes: list[dict], reason: str = 'received', name: str = 'available') -> requests.Response:
+def adjust_variant_quantities(changes: list[dict], reason: str = 'received', name: str = 'available') -> None:
     """
     Adjust 'available' quainties for product variants.
 
@@ -187,10 +199,6 @@ def adjust_variant_quantities(changes: list[dict], reason: str = 'received', nam
     # TODO: perhaps make the referenceDocumentUri the URI of the AdminAction that made this change.
     # see: https://shopify.dev/docs/api/admin-graphql/2025-01/mutations/inventoryAdjustQuantities
     
-    # TODO: this will be unsuccessful if:
-    # 1. response is not 200 or
-    # 2. response is 200 but comes back with 'userErrors' != [] (not an empty list)
-    print("\n\n", LOCATION_ID)
     changes_with_id = [
         {**change, "locationId": LOCATION_ID} for change in changes
     ]
@@ -203,5 +211,9 @@ def adjust_variant_quantities(changes: list[dict], reason: str = 'received', nam
         }
     }
     res = graphql_query(query, variables)
-
-    return res
+    user_errors = res.json()['data']['inventoryAdjustQuantities']['userErrors']
+    
+    if len(res.user_errors) > 0:
+        error_msg = f'There was an error in the mutation input: {str(user_errors)}'
+        app.logger.error(error_msg)
+        raise ShopifyUserError(error_msg)
