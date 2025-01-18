@@ -39,6 +39,7 @@ class AdminAction(db.Model):
         default= lambda: datetime.now(timezone.utc))
     action: orm.Mapped[str] = orm.mapped_column(sa.String(128))
     status: orm.Mapped[str] = orm.mapped_column(sa.String(16))
+    errors: orm.Mapped[Optional[str]] = orm.mapped_column(sa.String(256))
     user_id: orm.Mapped[int] = orm.mapped_column(sa.ForeignKey(User.id),
                                                  index=True)
     admin: orm.Mapped[User] = orm.relationship(back_populates='actions')
