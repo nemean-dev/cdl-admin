@@ -4,9 +4,9 @@ from datetime import datetime, timezone
 from flask import redirect, url_for, request, flash, render_template, send_file
 from flask_login import login_required, current_user
 from app import app, db
-from app.forms import SubmitForm
 from app.models import AdminAction
 from app.shop import bp
+from app.shop.forms import SubmitForm
 from app.shop.price_tags import generate_pdf
 from app.shop.sheety import clear_inventory_updates_sheet, fetch_etiquetas, fetch_inventory_updates
 from app.shop.shopify import adjust_variant_quantities, set_variant_price, set_variant_cost

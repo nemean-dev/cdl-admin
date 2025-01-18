@@ -6,6 +6,3 @@ class UserSettingsForm(FlaskForm):
     fname = StringField('Nombre', validators=[Length(min=0, max=128)])
     lname = StringField('Apellido', validators=[Length(min=0, max=128)])
     submit = SubmitField('Actualizar')
-
-class SubmitForm(FlaskForm):
-    submit = SubmitField('Enviar')
