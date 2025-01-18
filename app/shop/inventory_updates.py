@@ -49,10 +49,10 @@ def complete_sheety_data(sheety_df: pd.DataFrame) -> pd.DataFrame:
     # csv cols: sku, qty, display_name, vendor, new_price, price_delta, new_cost, cost_delta
     combined_data = []
     for index, row in sheety_df.iterrows():
-        sku = row['clave (sku)']
+        sku = row.get('clave (sku)')            or nan
         if not sku or sku != sku: continue
-        new_price = row['nuevoPrecioVenta']
-        new_cost = row['nuevoPrecioCompra']
+        new_price = row.get('nuevoPrecioVenta') or nan # TODO: remove these 3 `or nan` statements and instead make sure the sheety module returns all columns
+        new_cost = row.get('nuevoPrecioCompra') or nan
 
         # Query shopify for the variant corresponding to this SKU
         variants = get_variants_by_sku(sku)

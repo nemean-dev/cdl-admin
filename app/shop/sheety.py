@@ -16,7 +16,7 @@ def fetch_sheet_data(spreadsheet_name, sheet_name) -> pd.DataFrame:
     url = base_url + f"/{spreadsheet_name}/{sheet_name}"
     response = requests.get(url, headers=headers)
     response.raise_for_status()
-    return pd.DataFrame(response.json().get(sheet_name, []))
+    return pd.DataFrame(response.json().get(sheet_name, [])) #TODO: make sure all columns are in the dataframe because if no values are entered for a column sheety does not return it (since no record contains the field)
 
 def fetch_etiquetas():
     return fetch_sheet_data('etiquetas', 'etiquetas')
