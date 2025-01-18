@@ -46,7 +46,7 @@ def user_settings():
         current_user.lname = form.lname.data
         db.session.commit()
         flash('Tus cambios se guardaron con éxito.')
-        return redirect(url_for('user', id=current_user.id))
+        return redirect(url_for('dashboard.user', id=current_user.id))
     
     elif request.method == 'GET':
         form.fname.data = current_user.fname

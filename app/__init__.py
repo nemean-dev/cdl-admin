@@ -24,6 +24,9 @@ app.register_blueprint(shop_bp)
 from app.errors import bp as errors_bp
 app.register_blueprint(errors_bp)
 
+from app.dashboard import bp as dashboard_bp
+app.register_blueprint(dashboard_bp)
+
 if not app.debug:
     if app.config['MAIL_SERVER']:
         auth = None
@@ -52,4 +55,4 @@ if not app.debug:
     app.logger.setLevel(logging.INFO)
     app.logger.info('Microblog startup')
 
-from app import routes, models, errors
+from app import models

@@ -9,7 +9,7 @@
         <li>Última visita: {{ user.last_seen }}</li>
     </ul>
     {% if user == current_user %}
-        <p><a href="{{ url_for('user_settings') }}">Editar</a></p>
+        <p><a href="{{ url_for('dashboard.user_settings') }}">Editar</a></p>
     {% endif %}
     <hr>
     <h2>Acciones</h2>

@@ -30,7 +30,7 @@ def generate_labels():
     except Exception as e:
         app.logger.error(f"Error generating labels: {e}")
         flash('Failed to generate labels. Please try again.', 'danger')
-        return redirect(url_for('index'))
+        return redirect(url_for('dashboard.index'))
 
 @bp.route('/actualizar_cantidades', methods=['GET', 'POST'])
 @login_required

@@ -10,7 +10,7 @@ from app.auth.forms import LoginForm, RegisterUsersForm
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('index'))
+        return redirect(url_for('dashboard.index'))
 
     form = LoginForm()
 
@@ -23,7 +23,7 @@ def login():
             flash('Inicio de sesión exitoso')
             next_page = request.args.get('next')
             if not next_page or urlsplit(next_page).netloc != '':
-                next_page = url_for('index')
+                next_page = url_for('dashboard.index')
 
             return redirect(next_page)
         
@@ -36,14 +36,14 @@ def login():
 @bp.route('/logout')
 def logout():
     logout_user()
-    return redirect(url_for('index'))
+    return redirect(url_for('dashboard.index'))
 
 @bp.route('/register-users', methods=['GET', 'POST'])
 @login_required
 def register_users():
     if not current_user.is_superadmin:
         flash("You do not have permission to access this page.", "warning")
-        return redirect(url_for('index'))
+        return redirect(url_for('dashboard.index'))
     
     form = RegisterUsersForm()
 
