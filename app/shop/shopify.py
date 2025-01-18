@@ -22,6 +22,19 @@ class ShopifyUserError(Exception):
     """
     pass
 
+def raise_for_user_errors(res: requests.Response, queried_field: str):
+    """queried_field is the top level field of the query."""
+    try:
+        user_errors = res.json()['data'][queried_field]['userErrors']
+    except KeyError:
+        app.logger.error(f'All mutations should have "userError" field. response: {str(res.json())}')
+        return
+
+    if len(user_errors) > 0:
+        error_msg = f'There was an error in the mutation input: {str(user_errors)}'
+        app.logger.error(error_msg)
+        raise ShopifyUserError(error_msg)
+    
 def graphql_query(query: str, variables: dict = None) -> requests.Response:
     """
     To query the Shopify GraphQL API. Use with both queries and mutations.
@@ -112,7 +125,7 @@ def get_variants_by_sku(sku:str) -> list[dict]:
 
     return variants
 
-def set_variant_cost(inventory_item_id:str, cost:float) -> requests.Response:
+def set_variant_cost(inventory_item_id:str, cost:float) -> None:
     """
     Sets the unitCost for a product variant.
 
@@ -129,10 +142,9 @@ def set_variant_cost(inventory_item_id:str, cost:float) -> requests.Response:
         }
     }
     res = graphql_query(query, variables)
+    raise_for_user_errors(res, 'inventoryItemUpdate')
 
-    return res
-
-def set_variant_price(product_id:str, variant_id:Union[str, list[str]], price:Union[float, list[float]]) -> requests.Response:
+def set_variant_price(product_id:str, variant_id:Union[str, list[str]], price:Union[float, list[float]]) -> None:
     """
     Sets the price for a product variant, or for multiple product variants if 
     they all belong to the same product.
@@ -167,8 +179,7 @@ def set_variant_price(product_id:str, variant_id:Union[str, list[str]], price:Un
         "variants": variants
     }
     res = graphql_query(query, variables)
-
-    return res
+    raise_for_user_errors(res, 'productVariantsBulkUpdate')
 
 def adjust_variant_quantities(changes: list[dict], reason: str = 'received', name: str = 'available') -> None:
     """
@@ -211,9 +222,4 @@ def adjust_variant_quantities(changes: list[dict], reason: str = 'received', nam
         }
     }
     res = graphql_query(query, variables)
-    user_errors = res.json()['data']['inventoryAdjustQuantities']['userErrors']
-    
-    if len(res.user_errors) > 0:
-        error_msg = f'There was an error in the mutation input: {str(user_errors)}'
-        app.logger.error(error_msg)
-        raise ShopifyUserError(error_msg)
+    raise_for_user_errors(res, 'inventoryAdjustQuantities')

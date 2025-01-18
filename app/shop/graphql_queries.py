@@ -47,6 +47,7 @@ mutation inventoryItemUpdate($id: ID!, $input: InventoryItemInput!) {
     }
     userErrors {
       message
+      field
     }
   }
 }
@@ -64,6 +65,10 @@ mutation setVariantPrice($productId: ID!, $variants: [ProductVariantsBulkInput!]
       displayName
       price
     }
+    userErrors {
+      field
+      message
+    }
   }
 }
 '''
@@ -72,10 +77,6 @@ adjust_variant_quantities=\
 '''
 mutation adjustVariantsQuantities($input: InventoryAdjustQuantitiesInput!) {
   inventoryAdjustQuantities(input: $input) {
-    userErrors {
-      field
-      message
-    }
     inventoryAdjustmentGroup {
       createdAt
       reason
@@ -86,6 +87,10 @@ mutation adjustVariantsQuantities($input: InventoryAdjustQuantitiesInput!) {
           sku
         }
       }
+    }
+    userErrors {
+      field
+      message
     }
   }
 }

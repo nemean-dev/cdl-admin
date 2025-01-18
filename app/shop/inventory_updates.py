@@ -108,14 +108,6 @@ def complete_sheety_data(sheety_df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
-def upload_product_quantities(df: pd.DataFrame):
-    '''
-    Uploads product quantities to shopify.
-    
-    Params:
-    - df should contain the following columns: ,sku,quantity,displayName,vendor,newPrice,priceDelta,newCost,costDelta,errors
-    '''
-
 if __name__ == "__main__":
     data, time = get_local_inventory()
     print(time)
