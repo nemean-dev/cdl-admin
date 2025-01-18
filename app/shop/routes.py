@@ -1,9 +1,9 @@
 import os
 import json
 from datetime import datetime, timezone
-from flask import redirect, url_for, request, flash, render_template, send_file
+from flask import redirect, url_for, request, flash, render_template, send_file, current_app
 from flask_login import login_required, current_user
-from app import app, db
+from app import db
 from app.models import AdminAction
 from app.shop import bp
 from app.shop.forms import SubmitForm
@@ -20,7 +20,7 @@ def generate_labels():
         
         timestamp = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
         pdf_filename = f"labels_{timestamp}.pdf"
-        pdf_path = os.path.join(app.static_folder, 'pdfs', pdf_filename)
+        pdf_path = os.path.join(current_app.static_folder, 'pdfs', pdf_filename)
         os.makedirs(os.path.dirname(pdf_path), exist_ok=True)
 
         generate_pdf(data, pdf_path)
@@ -28,7 +28,7 @@ def generate_labels():
         return send_file(pdf_path, as_attachment=True, download_name=pdf_filename)
 
     except Exception as e:
-        app.logger.error(f"Error generating labels: {e}")
+        current_app.logger.error(f"Error generating labels: {e}")
         flash('Failed to generate labels. Please try again.', 'danger')
         return redirect(url_for('dashboard.index'))
 
@@ -56,7 +56,7 @@ def update_product_quantities():
                         data=data, time=time, enable_upload=enable_upload_btn)
     
     if refresh_form.validate_on_submit():
-        sheety = fetch_inventory_updates('actualizarCantidades', 'cantidades')        
+        sheety = fetch_inventory_updates()        
 
         if sheety.shape[0] == 0:
             flash('No se encontraron productos en Google Sheets', 'error')

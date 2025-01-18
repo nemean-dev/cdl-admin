@@ -2,12 +2,13 @@ from typing import Union
 import requests
 from requests.exceptions import HTTPError, ConnectionError, Timeout, RequestException
 from numpy import nan
-from app import app
+from flask import current_app
 import app.shop.graphql_queries as q
 
-STORE = app.config['SHOPIFY_STORE']
-API_TOKEN = app.config['SHOPIFY_API_TOKEN']
-LOCATION_ID = app.config['SHOPIFY_LOCATION_ID']
+# TODO same issue as in sheety module
+# STORE = current_app.config['SHOPIFY_STORE']
+# API_TOKEN = current_app.config['SHOPIFY_API_TOKEN']
+# LOCATION_ID = current_app.config['SHOPIFY_LOCATION_ID']
 
 class ShopifyQueryError(Exception):
     """
@@ -21,19 +22,6 @@ class ShopifyUserError(Exception):
     list exists and is not empty.
     """
     pass
-
-def raise_for_user_errors(res: requests.Response, queried_field: str):
-    """queried_field is the top level field of the query."""
-    try:
-        user_errors = res.json()['data'][queried_field]['userErrors']
-    except KeyError:
-        app.logger.error(f'All mutations should have "userError" field. response: {str(res.json())}')
-        return
-
-    if len(user_errors) > 0:
-        error_msg = f'There was an error in the mutation input: {str(user_errors)}'
-        app.logger.error(error_msg)
-        raise ShopifyUserError(error_msg)
     
 def graphql_query(query: str, variables: dict = None) -> requests.Response:
     """
@@ -42,6 +30,8 @@ def graphql_query(query: str, variables: dict = None) -> requests.Response:
 
     e.g. res, has_errors = graphql_query(q, vars)
     """
+    STORE = current_app.config['SHOPIFY_STORE']
+    API_TOKEN = current_app.config['SHOPIFY_API_TOKEN']
     url = f"https://{STORE}.myshopify.com/admin/api/2025-01/graphql.json"
     headers = {
         "Content-Type": "application/json",
@@ -65,24 +55,37 @@ def graphql_query(query: str, variables: dict = None) -> requests.Response:
 
     except HTTPError as e:
         if res.status_code < 500:
-            app.logger.error(f"HTTP client error occurred: {e}")  # 4xx, 5xx errors raised by raise_for_status()
+            current_app.logger.error(f"HTTP client error occurred: {e}")  # 4xx, 5xx errors raised by raise_for_status()
         else:
-            app.logger.warning(f"HTTP server error occurred: {e}") 
+            current_app.logger.warning(f"HTTP server error occurred: {e}") 
         raise
     except ConnectionError as e:
-        app.logger.warning(f"Connection error occurred: {e}")  # Network problems
+        current_app.logger.warning(f"Connection error occurred: {e}")  # Network problems
         raise
     except Timeout as e:
-        app.logger.warning(f"Timeout error occurred: {e}")  # Timeout
+        current_app.logger.warning(f"Timeout error occurred: {e}")  # Timeout
         raise
     except RequestException as e:
-        app.logger.error(f"An error occurred: {e}")  # Catch-all for other request exceptions
+        current_app.logger.error(f"An error occurred: {e}")  # Catch-all for other request exceptions
         raise
     except ShopifyQueryError as e:
-        app.logger.error(f"GraphQL query error occured: {e}")
+        current_app.logger.error(f"GraphQL query error occured: {e}")
         raise
 
     return res
+
+def raise_for_user_errors(res: requests.Response, queried_field: str):
+    """queried_field is the top level field of the query."""
+    try:
+        user_errors = res.json()['data'][queried_field]['userErrors']
+    except KeyError:
+        current_app.logger.error(f'All mutations should have "userError" field. response: {str(res.json())}')
+        return
+
+    if len(user_errors) > 0:
+        error_msg = f'There was an error in the mutation input: {str(user_errors)}'
+        current_app.logger.error(error_msg)
+        raise ShopifyUserError(error_msg)
 
 def get_variants_by_sku(sku:str) -> list[dict]:
     """
@@ -209,6 +212,7 @@ def adjust_variant_quantities(changes: list[dict], reason: str = 'received', nam
     # TODO: perhaps make the referenceDocumentUri the URI of the AdminAction that made this change.
     # see: https://shopify.dev/docs/api/admin-graphql/2025-01/mutations/inventoryAdjustQuantities
     
+    LOCATION_ID = current_app.config['SHOPIFY_LOCATION_ID']
     changes_with_id = [
         {**change, "locationId": LOCATION_ID} for change in changes
     ]

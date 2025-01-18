@@ -1,16 +1,18 @@
 import pandas as pd
-from app import app
 import requests
-
-base_url = f"https://api.sheety.co/{app.config['SHEETY_USERNAME']}"
-headers = {
-    "Authorization": f"Bearer {app.config['SHEETY_BEARER']}"
-}
+from flask import current_app
 
 def fetch_sheet_data(spreadsheet_name, sheet_name) -> pd.DataFrame:
     """
     Fetch from the Sheety API the info necessary to generate price tags pdf.
     """
+    base_url = f"https://api.sheety.co/{current_app.config['SHEETY_USERNAME']}"
+    headers = {
+        "Authorization": f"Bearer {current_app.config['SHEETY_BEARER']}"
+    } # TODO: these two variables should be outside this function, as they are 
+      # also used in put_record. but when I do that the app breaks.
+      # How to access config variables during initialization?
+
     url = base_url + f"/{spreadsheet_name}/{sheet_name}"
     response = requests.get(url, headers=headers)
     response.raise_for_status()
@@ -26,6 +28,10 @@ def put_record(spreadsheet_name:str, sheet_name:str, row:int, payload:dict) -> b
     """
     Returns True if response is 200
     """
+    base_url = f"https://api.sheety.co/{current_app.config['SHEETY_USERNAME']}"
+    headers = {
+        "Authorization": f"Bearer {current_app.config['SHEETY_BEARER']}"
+    }
     url = base_url + f"/{spreadsheet_name}/{sheet_name}/{row}"
     res = requests.put(url, headers=headers, json=payload)
     return res.status_code == 200
