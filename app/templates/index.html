@@ -18,6 +18,17 @@
 </ul>
 <a href="{{ url_for('dashboard.action_log') }}">Ver historial de acciones</a>
 
+<h2>Links externos</h2>
+<ul>
+  {% if config['URL_WORKLOG'] %}
+  <li><a href="{{ config['URL_WORKLOG']}}">Work Log</a></li>
+  {% endif %}
+  {% if config['URL_KANBAN'] %}
+  <li><a href="{{ config['URL_KANBAN']}}">Kanban</a></li>
+  {% endif %}
+</ul>
+
+
 <h2>Viajes</h2>
 <p>links a viajes</p>
 

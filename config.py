@@ -37,3 +37,7 @@ class Config:
     MAIL_USERNAME = os.getenv('MAIL_USERNAME')
     MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
     ADMINS = os.getenv('MAIL_ADMINS').split(',') if os.getenv('MAIL_ADMINS') else None
+
+    # External links
+    URL_WORKLOG=os.getenv('URL_WORKLOG')
+    URL_KANBAN=os.getenv('URL_KANBAN')

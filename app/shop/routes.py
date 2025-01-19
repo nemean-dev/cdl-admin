@@ -89,7 +89,6 @@ def upload_product_quantities():
         for _, row in df.iterrows() ]
     try:
         adjust_variant_quantities(quantity_changes)
-        pass
     except:
         flash('Fracasó el intento de actualizar el inventario. Si el error persiste, contacta a un administrador.', 'error')
         return redirect(url_for('update_product_quantities'))
@@ -136,11 +135,11 @@ def upload_product_quantities():
             continue
     if error_skus:
         flash(f'Hubieron problemas al actualizar los precios de compra de algunos productos. Por favor actualízalos a mano. \nskus: {", ".join(error_skus)}', 'error')
-        update_prices_action.status = 'Incompleto'
+        update_costs_action.status = 'Incompleto'
     else:
         flash('Se actualizaron los precios de compra correctamente')
-        update_prices_action.status = 'Completado'
-    db.session.add(update_prices_action)
+        update_costs_action.status = 'Completado'
+    db.session.add(update_costs_action)
     db.session.commit()
 
     # CLEAR GOOGLE SHEETS SPREADSHEET
