@@ -79,11 +79,11 @@ def upload_product_quantities():
     df, timestamp, total_errors = get_local_inventory()
     if total_errors > 0:
         flash('No es posible subir cantidades mientras aún hay errores. Porfavor revisa los reglones marcadoes en rojo.', 'error')
-        return redirect(url_for('update_product_quantities'))
+        return redirect(url_for('shop.update_product_quantities'))
     
     if not current_user.is_superadmin:
         flash('Tu usuario no tiene los permisos necesarios para realizar esta acción.')
-        return redirect(url_for('update_product_quantities'))
+        return redirect(url_for('shop.update_product_quantities'))
 
     # TODO: check for updates in sheety before adjusting. Don't do it if timestamp is very recent.
     # TODO 3 dicide which of these queries will update the metafield information for cost history, or create another one.
@@ -99,7 +99,7 @@ def upload_product_quantities():
         adjust_variant_quantities(quantity_changes)
     except:
         flash('Fracasó el intento de actualizar el inventario. Si el error persiste, contacta a un administrador.', 'error')
-        return redirect(url_for('update_product_quantities'))
+        return redirect(url_for('shop.update_product_quantities'))
     
     flash("Se actualizaron las cantidades correctamente.")
     update_quantities_action = AdminAction(action="Actualizar cantidades de inventario", status='Completado', admin=current_user)

@@ -1,3 +1,4 @@
+from time import sleep
 import requests
 from requests.exceptions import HTTPError, ConnectionError, Timeout, RequestException
 from flask import current_app
@@ -46,31 +47,53 @@ def graphql_query(query: str, variables: dict = None) -> requests.Response:
     else:
         payload = { 'query': query }
     
-    try:
-        res = requests.post(url=url, headers=headers, json=payload)
-        res.raise_for_status()
+    try_again, try_count = True, 0
+    while try_again:
+        try_again=False
+        try:
+            res = requests.post(url=url, 
+                                headers=headers, 
+                                json=payload, 
+                                timeout=(5, 15))
+            res.raise_for_status()
 
-        if res.json().get('errors'):
-            raise ShopifyQueryError(f'There was an error with the GraphQL query: {str(res.json()['errors'])}')
+            if res.json().get('errors'):
+                raise ShopifyQueryError(f'There was an error with the GraphQL query: {str(res.json()['errors'])}')
 
-    except HTTPError as e:
-        if res.status_code < 500:
-            current_app.logger.error(f"HTTP client error occurred: {e}")  # 4xx, 5xx errors raised by raise_for_status()
+        except HTTPError as e:
+            if res.status_code == 429:
+                try_again = True
+                sleep(2)
+                current_app.logger.warning("429 Response: Too many requests. Waiting 2 seconds...")
+                if try_count >= 5:
+                    raise
+            elif res.status_code < 500:
+                current_app.logger.error(f"HTTP client error occurred: {e}")
+                raise
+            else:
+                current_app.logger.warning(f"HTTP server error occurred, will try again in 3 seconds. Error: {e}") 
+                try_again = True
+                sleep(3)
+        except ConnectionError as e:
+            current_app.logger.warning(f"Connection error occurred. Trying again in 3 seconds: {e}")
+            sleep(3)
+            try_again = True
+            if try_count >= 7: 
+                raise
+        except Timeout as e:
+            current_app.logger.warning(f"Timeout error occurred: {e}")
+            if try_count >= 2:
+                raise
+        except RequestException as e:
+            current_app.logger.error(f"An error occurred: {e}")
+            raise
+        except ShopifyQueryError as e:
+            current_app.logger.error(f"GraphQL query error occured: {e}")
+            raise
         else:
-            current_app.logger.warning(f"HTTP server error occurred: {e}") 
-        raise
-    except ConnectionError as e: #TODO wait a bit and keep trying on >= 500 error, connection errors, timeout errors
-        current_app.logger.warning(f"Connection error occurred: {e}")  # Network problems
-        raise
-    except Timeout as e:
-        current_app.logger.warning(f"Timeout error occurred: {e}")  # Timeout
-        raise
-    except RequestException as e:
-        current_app.logger.error(f"An error occurred: {e}")  # Catch-all for other request exceptions
-        raise
-    except ShopifyQueryError as e:
-        current_app.logger.error(f"GraphQL query error occured: {e}")
-        raise
+            throttle_management(res)
+        finally:
+            try_count+=1
 
     return res
 
@@ -86,3 +109,21 @@ def raise_for_user_errors(res: requests.Response, queried_field: str):
         error_msg = f'There was an error in the mutation input: {str(user_errors)}'
         current_app.logger.error(error_msg)
         raise ShopifyUserError(error_msg)
+
+def throttle_management(response: requests.Response, default_seconds=0):
+    try:
+        query_cost_info = response.json()['extensions']['cost']
+        requested_query_cost = query_cost_info['requestedQueryCost']
+        available = query_cost_info['throttleStatus']['currentlyAvailable']
+        restore_rate = query_cost_info['throttleStatus']['restoreRate']
+        
+        if requested_query_cost > available:
+            wait_time = (requested_query_cost - available) // restore_rate + 1
+            current_app.logger.info(f"Insufficient throttle: needed {requested_query_cost}, available {available}. Waiting for {wait_time} seconds.")
+            sleep(wait_time)
+        else:
+            current_app.logger.debug("Sufficient throttle available; no wait required.")
+
+    except KeyError:
+        current_app.logger.warning("No query cost info in response, skipping throttle management. Waiting for the default time.")
+        sleep(default_seconds)
