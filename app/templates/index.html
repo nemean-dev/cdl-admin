@@ -1,7 +1,11 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h1>Casa de Luna</h1>
+<div class="d-flex align-items-end">
+<h1 class="mb-0 me-3">Casa de Luna</h1>
+<p class="text-secondary mb-0 fs-5">{{ config['SHOPIFY_STORE'] }}</p>
+</div>
+
 <hr>
 
 <h2>Acciones</h2>
@@ -20,6 +24,7 @@
 
 <h2>Links externos</h2>
 <ul>
+  <li><a href="https://admin.shopify.com/store/{{ config['SHOPIFY_STORE'] }}/products?selectedView=all">Shopify</a></li>
   {% if config['URL_WORKLOG'] %}
   <li><a href="{{ config['URL_WORKLOG']}}">Work Log</a></li>
   {% endif %}

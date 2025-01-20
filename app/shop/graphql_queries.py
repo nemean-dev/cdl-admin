@@ -30,6 +30,9 @@ get_variants_by_sku=\
           amount
         }
       }
+      metafield (namespace: "custom", key: "cost_history") {
+        jsonValue
+      }
     }
   }
 }

@@ -62,6 +62,7 @@ field that is set to 'none' if no errors
       <th scope="col">Proveedor</th>
       <th scope="col">Nuevo Precio de Compra</th>
       <th scope="col">Nuevo Precio de Venta</th>
+      <th scope="col">Fecha de Compra</th>
     </tr>
   </thead>
   <tbody>
@@ -76,7 +77,7 @@ field that is set to 'none' if no errors
       <td>{{ row['vendor'] | default('NaN') }}</td>
       <td>{{ row['newCost'] | default('NaN') }}</td>
       <td>{{ row['newPrice'] | default('NaN') }}</td>
-      <td></td>
+      <td>{{ row['costHistory'][-1]['fechaDeCompra'] | default('NaN') }}</td>
     </tr>
       
     {% else %}

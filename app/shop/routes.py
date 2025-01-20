@@ -47,9 +47,12 @@ def update_product_quantities():
         if df is not None and df.shape[0] > 0:
             if total_errors:
                 flash(f'No es posible subir los productos actualmente: hay {total_errors} SKU con errores.', 'warning')
-
+            else:
+                enable_upload_btn=True
             data = json.loads(df.to_json(orient='records'))
-            enable_upload_btn=(total_errors==0)
+            for row in data:
+                if row.get('costHistory'):
+                    row['costHistory'] = json.loads(row['costHistory'])
 
         return render_template('actualizar_cantidades.html', 
                         refresh_form=refresh_form, confirm_form=confirm_form, 
@@ -79,6 +82,7 @@ def upload_product_quantities():
         return redirect(url_for('update_product_quantities'))
     
     # TODO: check for updates in sheety before adjusting. Don't do it if timestamp is very recent.
+    # TODO 3 dicide which of these queries will update the metafield information for cost history, or create another one.
 
     # UPDATE INVENTORY QUANTITIES
     quantity_changes = [

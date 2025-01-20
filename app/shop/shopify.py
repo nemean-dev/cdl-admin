@@ -121,7 +121,8 @@ def get_variants_by_sku(sku:str) -> list[dict]:
             "price": variant['price'],
             "unitCost": unit_cost,
             "inventoryItemId": variant['inventoryItem']['id'],
-            "productId": variant['product']['id']
+            "productId": variant['product']['id'],
+            "costHistory": variant['metafield']['jsonValue'] if variant['metafield'] else [],
         }
         variants.append(variant_data)
 

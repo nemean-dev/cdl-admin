@@ -1,7 +1,7 @@
 import os
 import json
 from typing import Optional
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import pandas as pd
 from numpy import nan
 from app.shop.shopify import get_variants_by_sku
@@ -53,6 +53,10 @@ def complete_sheety_data(sheety_df: pd.DataFrame) -> pd.DataFrame:
         if not sku or sku != sku: continue
         new_price = row.get('nuevoPrecioVenta', nan) # TODO: remove these 3 `nan` and instead make sure the sheety module returns all columns
         new_cost = row.get('nuevoPrecioCompra', nan)
+        qty = int(row.get('cantidadAAgregar', 0))
+        fecha_de_compra = row.get('fechaDeCompra (yyyyMmDd)', nan)
+        if fecha_de_compra != fecha_de_compra: #if fecha de compra is nan
+            fecha_de_compra = datetime.now(timezone(timedelta(hours=-6))).strftime('%Y-%m-%d') #TODO: make env variable for the store's local timezone and use throughout app. Also in db.
 
         # Query shopify for the variant corresponding to this SKU
         variants = get_variants_by_sku(sku)
@@ -85,25 +89,31 @@ def complete_sheety_data(sheety_df: pd.DataFrame) -> pd.DataFrame:
             continue
         
         variant = variants[0]
-        
-        # row is from Google Sheets and variant is the corresponding Shopify productVariant
-        combined_product_data = {
+
+        new_cost_history = variant['costHistory']
+        new_cost_history.append({
+            "costo": new_cost,
+            "cantidad": qty,
+            "fechaDeCompra": fecha_de_compra,
+        })
+
+        joined_product_data = {
             'sku': sku, 
-            'quantity': int(row.get('cantidadAAgregar', 0)), 
+            'quantity': qty, 
             'displayName': variant['displayName'],
             'vendor': variant['vendor'],
-            'newPrice': new_price if new_price else nan,
-            'priceDelta': new_price - float(variant['price']) if new_price else nan,
-            'newCost': new_cost if new_cost else nan,
-            'costDelta': new_cost - float(variant['unitCost']) if new_cost else nan,
+            'newPrice': new_price,
+            'priceDelta': new_price - float(variant['price']),
+            'newCost': new_cost,
+            'costDelta': new_cost - float(variant['unitCost']),
             'errors': 'none',
             'variantId': variant['variantId'],
             'productId': variant['productId'],
             'inventoryItemId': variant['inventoryItemId'],
+            'costHistory': json.dumps(new_cost_history),
         }
-        combined_data.append(combined_product_data)
+        combined_data.append(joined_product_data)
     
-    # write combined data to csv for loading and add timestamp
     df = pd.DataFrame.from_records(combined_data)
 
     return df
