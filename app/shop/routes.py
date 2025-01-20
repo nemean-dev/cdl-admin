@@ -9,8 +9,8 @@ from app.shop import bp
 from app.shop.forms import SubmitForm
 from app.shop.price_tags import generate_pdf
 from app.shop.sheety import clear_inventory_updates_sheet, fetch_etiquetas, fetch_inventory_updates
-from app.shop.shopify import adjust_variant_quantities, set_variant_price, set_variant_cost, set_metafields
-from app.shop.inventory_updates import get_local_inventory, delete_local_inventory, write_local_inventory, complete_sheety_data
+from app.shop.inventory import get_local_inventory, delete_local_inventory, write_local_inventory, complete_sheety_data,\
+    adjust_variant_quantities, set_variant_price, set_variant_cost, set_metafields
 
 @bp.route('/generar-pdf-etiquetas')
 @login_required
