@@ -77,7 +77,7 @@ field that is set to 'none' if no errors
       <td>{{ row['vendor'] | default('NaN') }}</td>
       <td>{{ row['newCost'] | default('NaN') }}</td>
       <td>{{ row['newPrice'] | default('NaN') }}</td>
-      <td>{{ row['costHistory'][-1]['fechaDeCompra'] | default('NaN') }}</td>
+      <td>{{ row['costHistory']['value'][-1]['fechaDeCompra'] | default('NaN') }}</td>
     </tr>
       
     {% else %}

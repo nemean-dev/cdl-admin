@@ -32,11 +32,14 @@ get_variants_by_sku=\
       }
       metafield (namespace: "custom", key: "cost_history") {
         jsonValue
+        compareDigest
       }
     }
   }
 }
 '''
+# TODO since we are using compareDigest to guarantee integrity, and to keep data clean, 
+# I should not allow 2 entries for the same sku in 'actualizar cantidades'
 
 set_variant_cost=\
 '''
@@ -94,6 +97,25 @@ mutation adjustVariantsQuantities($input: InventoryAdjustQuantitiesInput!) {
     userErrors {
       field
       message
+    }
+  }
+}
+'''
+
+set_metafields=\
+'''
+mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
+  metafieldsSet(metafields: $metafields) {
+    metafields {
+      namespace
+      key
+      value
+      compareDigest
+    }
+    userErrors {
+      field
+      message
+      code
     }
   }
 }

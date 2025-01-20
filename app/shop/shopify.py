@@ -1,4 +1,6 @@
 from typing import Union
+import json
+from time import sleep
 import requests
 from requests.exceptions import HTTPError, ConnectionError, Timeout, RequestException
 from numpy import nan
@@ -26,9 +28,12 @@ class ShopifyUserError(Exception):
 def graphql_query(query: str, variables: dict = None) -> requests.Response:
     """
     To query the Shopify GraphQL API. Use with both queries and mutations.
-    Returns response as is and a boolean that is True if any errors were found.
 
-    e.g. res, has_errors = graphql_query(q, vars)
+    Raises any errors (inlcuding 'errors' field in status code 200 responses)
+
+    If doing mutations: 
+    this function checks for errors BUT NOT for 'userErrors' in Shopify GraphQL 
+    mutations. For that you can use raise_for_user_errors() instead.
     """
     STORE = current_app.config['SHOPIFY_STORE']
     API_TOKEN = current_app.config['SHOPIFY_API_TOKEN']
@@ -59,7 +64,7 @@ def graphql_query(query: str, variables: dict = None) -> requests.Response:
         else:
             current_app.logger.warning(f"HTTP server error occurred: {e}") 
         raise
-    except ConnectionError as e:
+    except ConnectionError as e: #TODO wait a bit and keep trying on >= 500 error, connection errors, timeout errors
         current_app.logger.warning(f"Connection error occurred: {e}")  # Network problems
         raise
     except Timeout as e:
@@ -80,7 +85,7 @@ def raise_for_user_errors(res: requests.Response, queried_field: str):
         user_errors = res.json()['data'][queried_field]['userErrors']
     except KeyError:
         current_app.logger.error(f'All mutations should have "userError" field. response: {str(res.json())}')
-        return
+        raise
 
     if len(user_errors) > 0:
         error_msg = f'There was an error in the mutation input: {str(user_errors)}'
@@ -122,7 +127,8 @@ def get_variants_by_sku(sku:str) -> list[dict]:
             "unitCost": unit_cost,
             "inventoryItemId": variant['inventoryItem']['id'],
             "productId": variant['product']['id'],
-            "costHistory": variant['metafield']['jsonValue'] if variant['metafield'] else [],
+            "costHistoryValue": variant['metafield']['jsonValue'] if variant['metafield'] else [],
+            "costHistoryCompareDigest": variant['metafield']['compareDigest'] if variant['metafield'] else []
         }
         variants.append(variant_data)
 
@@ -227,3 +233,36 @@ def adjust_variant_quantities(changes: list[dict], reason: str = 'received', nam
     }
     res = graphql_query(query, variables)
     raise_for_user_errors(res, 'inventoryAdjustQuantities')
+    current_app.logger.info(f"Inventory adjusted for {len(changes)} variants. Response: {res.text}")
+
+def set_metafields(metafields=list[dict]) -> str:
+    '''
+    Each metafield in the list should have the following format.
+    {
+      "key": "some_key",
+      "namespace": "the_namespace",
+      "ownerId": "e.g. the variant ID or the product ID",
+      "type": 'e.g. "json"',
+      "compareDigest": "abc123456",
+      "value": "value to set"
+    }
+    For supported types see: https://shopify.dev/docs/apps/build/custom-data/metafields/list-of-data-types
+
+    Returns error message to show user if there is an error.
+    '''
+    for metafield in metafields:
+        metafield['value'] = json.dumps(metafield['value'])
+    query = q.set_metafields
+    for i in range(0, len(metafields), 25): # we can only upload 25 metafields at a time
+        batch = metafields[i:i+25]
+        variables = {
+            "metafields": batch
+        }
+        try:
+            res = graphql_query(query, variables)
+            raise_for_user_errors(res, queried_field='metafieldsSet')
+        except:
+            current_app.logger.error(f"Errors encountered while uploading {len(batch)} metafields. Problem batch is from metafield #{i+1} to #{i+len(batch)}.")
+            raise
+        else:
+            current_app.logger.info(f'{len(batch)} metafields updated in batch #{i/25 + 1}.')

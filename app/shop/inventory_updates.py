@@ -90,12 +90,20 @@ def complete_sheety_data(sheety_df: pd.DataFrame) -> pd.DataFrame:
         
         variant = variants[0]
 
-        new_cost_history = variant['costHistory']
-        new_cost_history.append({
+        new_cost_history_value = variant['costHistoryValue']
+        new_cost_history_value.append({
             "costo": new_cost,
             "cantidad": qty,
-            "fechaDeCompra": fecha_de_compra,
+            "fecha de compra": fecha_de_compra,
         })
+        new_cost_history = {
+            "key": "cost_history",
+            "namespace": "custom",
+            "ownerId": variant['variantId'],
+            "type": "json",
+            "compareDigest": variant['costHistoryCompareDigest'],
+            "value": new_cost_history_value
+        }
 
         joined_product_data = {
             'sku': sku, 

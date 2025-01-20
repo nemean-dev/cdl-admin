@@ -9,7 +9,7 @@ from app.shop import bp
 from app.shop.forms import SubmitForm
 from app.shop.price_tags import generate_pdf
 from app.shop.sheety import clear_inventory_updates_sheet, fetch_etiquetas, fetch_inventory_updates
-from app.shop.shopify import adjust_variant_quantities, set_variant_price, set_variant_cost
+from app.shop.shopify import adjust_variant_quantities, set_variant_price, set_variant_cost, set_metafields
 from app.shop.inventory_updates import get_local_inventory, delete_local_inventory, write_local_inventory, complete_sheety_data
 
 @bp.route('/generar-pdf-etiquetas')
@@ -78,9 +78,13 @@ def upload_product_quantities():
     # TODO: view is dirty but working... needs a lot of refactoring
     df, timestamp, total_errors = get_local_inventory()
     if total_errors > 0:
-        flash('Cannot post data with errors.', 'error')
+        flash('No es posible subir cantidades mientras aún hay errores. Porfavor revisa los reglones marcadoes en rojo.', 'error')
         return redirect(url_for('update_product_quantities'))
     
+    if not current_user.is_superadmin:
+        flash('Tu usuario no tiene los permisos necesarios para realizar esta acción.')
+        return redirect(url_for('update_product_quantities'))
+
     # TODO: check for updates in sheety before adjusting. Don't do it if timestamp is very recent.
     # TODO 3 dicide which of these queries will update the metafield information for cost history, or create another one.
 
@@ -116,7 +120,7 @@ def upload_product_quantities():
             update_prices_action.errors += f"{row['sku']},"
             continue
     if error_skus:
-        flash(f'Hubieron problemas al actualizar los precios de venta de algunos productos. Por favor actualízalos a mano. \nskus: {", ".join(error_skus)}', 'error')
+        flash(f'Hubieron errores al actualizar los precios de venta de algunos productos. Por favor actualízalos a mano. \nskus: {", ".join(error_skus)}', 'error')
         update_prices_action.status = 'Incompleto'
     else:
         flash('Se actualizaron los precios de venta correctamente')
@@ -147,7 +151,25 @@ def upload_product_quantities():
     db.session.commit()
 
     # CLEAR GOOGLE SHEETS SPREADSHEET
-    clear_inventory_updates_sheet()
+    #clear_inventory_updates_sheet()
+
+    # UPDATE COST HISTORY METAFIELD
+    cost_histories = df['costHistory'].to_list()
+    for i in range(len(cost_histories)):
+        cost_histories[i] = json.loads(cost_histories[i])
+    update_cost_history_action = AdminAction(action="Actualizar historial de costos (variant metafield)", status='En progreso', admin=current_user)
+    db.session.add(update_cost_history_action)
+    db.session.commit()
+    try:
+        set_metafields(cost_histories)
+    except:
+        flash('Hubieron errores al actualizar el metafield "cost history"', 'error')
+        update_cost_history_action.status = 'Incompleto'
+    else:
+        flash("Se actualizaron los metafields correctamente")
+        update_cost_history_action.status = 'Completado'
+    db.session.add(update_cost_history_action)
+    db.session.commit()
 
     return redirect(url_for('shop.update_product_quantities'))
 
