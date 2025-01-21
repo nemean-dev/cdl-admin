@@ -58,16 +58,22 @@ def user_settings():
 
 @bp.route('/loading')
 def loading():
-    return render_template('loading.html', process= url_for( 'dashboard.wait', seconds=30),
-                           final_url= url_for('dashboard.index'),
-                           process_name= 'this is a test...')
+    """
+    Loading page that sends a request to process_view and redirects to final_view once the process is finished
+    """
+    process_description = request.args.get('process_name') or ''
+    process_view = request.args.get('process_view') or 'dashboard.wait'
+    final_view = request.args.get('final_view') or 'dashboard.index'
+    return render_template('loading.html', process= url_for(process_view, seconds=30),
+                           final_url= url_for(final_view),
+                           process_description= process_description)
 
+@bp.route('/wait', defaults={'seconds': 7})
 @bp.route('/wait/<seconds>')
 def wait(seconds):
     try:
         time = int(seconds)
-    except ValueError as e:
-        flash('You did not enter a valid time, therefore you had to wait 10 seconds.')
-        time = 9
+    except ValueError:
+        time = 10
     sleep(time)
     return(f'Hope you had a nice {time}-second rest.')
