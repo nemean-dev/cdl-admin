@@ -7,6 +7,8 @@ from app.dashboard import bp
 from app.models import User, AdminAction
 from app.dashboard.forms import UserSettingsForm
 
+from time import sleep
+
 @bp.before_request
 def before_request():
     if current_user.is_authenticated:
@@ -53,3 +55,19 @@ def user_settings():
         form.lname.data = current_user.lname
 
     return render_template('user_settings.html', title='Editar Perfil', form=form)
+
+@bp.route('/loading')
+def loading():
+    return render_template('loading.html', process= url_for( 'dashboard.wait', seconds=30),
+                           final_url= url_for('dashboard.index'),
+                           process_name= 'this is a test...')
+
+@bp.route('/wait/<seconds>')
+def wait(seconds):
+    try:
+        time = int(seconds)
+    except ValueError as e:
+        flash('You did not enter a valid time, therefore you had to wait 10 seconds.')
+        time = 9
+    sleep(time)
+    return(f'Hope you had a nice {time}-second rest.')

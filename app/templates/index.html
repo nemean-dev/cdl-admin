@@ -14,22 +14,30 @@
   <li><a href="{{ url_for('shop.captura') }}">Subir productos en captura</a></li>
   <li><a href="{{ url_for('shop.update_product_quantities') }}">Actualizar cantidades</a></li>
   <li><a href="{{ url_for('shop.etiquetas') }}">Imprimir etiquetas</a></li>
-  <li><a class="disabled-link" href="{{ url_for('shop.exportar_productos') }}">Obtener productos por proveedor/estado/etc</a></li>
+  <li><a class="disabled-link" href="{{ url_for('shop.products') }}">Obtener productos por proveedor/estado/etc</a></li>
   <li><a class="disabled-link" href="#">Reporte de ventas</a></li>
   {% if current_user.is_superadmin %}
   <li><a href="{{ url_for('auth.register_users') }}">Agregar administradores</a></li>
   {% endif %}
+  <li><a href="{{ url_for('dashboard.loading') }}">Test Loading page</a></li>
 </ul>
 <a href="{{ url_for('dashboard.action_log') }}">Ver historial de acciones</a>
 
 <h2>Links externos</h2>
 <ul>
-  <li><a href="https://admin.shopify.com/store/{{ config['SHOPIFY_STORE'] }}/products?selectedView=all">Shopify</a></li>
+  <li><a href="https://admin.shopify.com/store/{{ config['SHOPIFY_STORE'] }}/products?selectedView=all" 
+    target="_blank" rel="noopener noreferrer">Shopify</a>
+  </li>
   {% if config['URL_WORKLOG'] %}
-  <li><a href="{{ config['URL_WORKLOG']}}">Work Log</a></li>
+  <li><a href="{{ config['URL_WORKLOG']}}" 
+    target="_blank" rel="noopener noreferrer">Work Log</a>
+  </li>
   {% endif %}
   {% if config['URL_KANBAN'] %}
-  <li><a href="{{ config['URL_KANBAN']}}">Kanban</a></li>
+  <li><a href="{{ config['URL_KANBAN']}}" 
+    target="_blank" rel="noopener noreferrer">Kanban</a>
+  </li>
+  <li><a href="https://github.com/nemean-dev/cdl-admin">Repository</a></li>
   {% endif %}
 </ul>
 
