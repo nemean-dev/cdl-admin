@@ -303,6 +303,47 @@ def set_metafields(metafields=list[dict]) -> str:
         else:
             current_app.logger.info(f'{len(batch)} metafields updated in batch #{i/25 + 1}.')
 
+def get_variants_using_query(query: str, cursor: str=None) -> tuple[list[dict], str]:
+    """Get useful information on the variants and their respective product.
+
+    Returns (products, cursor) duple.
+    - products: list[dict]
+    - endCursor: str | None
+      - endCursor is None if there is no next page.
+    
+    Params
+    - query: will be used as the 'query' variable in the graphql query below:
+
+    Query:
+    ```
+    query GetProductVariants ($query: String!) {
+      productVariants(first: 3, query:$query) {
+        nodes {
+          # some fields
+        }
+      }
+    }
+    ```
+    """
+    query = q.get_variants_from_products_query % query
+    # variables = {
+    #     "query": f'"{query}"'
+    # } TODO: why does this not work?
+    try:
+        res = graphql_query(query)
+        print(json.dumps(res.text))
+    except Exception as e:
+        current_app.logger.warning(f"Errors encountered while retrieving queried products.\n  query: {query}\n  Error: {e}")
+        raise
+    
+    page_info = res.json()['data']['products']['pageInfo']
+    if page_info['hasNextPage']:
+        end_cursor = page_info['endCursor']
+    else:
+        end_cursor = None
+    
+    return res.json()['data']['products']['nodes'], end_cursor
+    # TODO implement pagination
 
 if __name__ == "__main__":
     data, time = get_local_inventory()

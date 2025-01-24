@@ -6,11 +6,11 @@ from flask_login import login_required, current_user
 from app import db
 from app.models import AdminAction
 from app.shop import bp
-from app.shop.forms import SubmitForm
+from app.shop.forms import SubmitForm, QueryProductsForm
 from app.shop.price_tags import generate_pdf
 from app.shop.sheety import clear_inventory_updates_sheet, fetch_etiquetas, fetch_inventory_updates
 from app.shop.inventory import get_local_inventory, delete_local_inventory, write_local_inventory, complete_sheety_data,\
-    adjust_variant_quantities, set_variant_price, set_variant_cost, set_metafields
+    adjust_variant_quantities, set_variant_price, set_variant_cost, set_metafields, get_variants_using_query
 
 @bp.route('/generar-pdf-etiquetas')
 @login_required
@@ -182,7 +182,61 @@ def captura():
 def etiquetas():    
     return render_template('price_tags.html', title='Etiquetas')
 
-@bp.route('/exportar-productos')
+@bp.route('/productos', methods=['GET', 'POST'])
 @login_required
-def exportar_productos():
-    return 'building...'
+def products():
+    form = QueryProductsForm()
+
+    if form.validate_on_submit():
+        state = f"metafields.custom.estado:'{form.state.data}'" if form.state.data else ''
+        town = f"metafields.custom.pueblo:'{form.town.data}'" if form.town.data else ''
+        vendor = f"vendor:'{form.vendor.data}'" if form.vendor.data else ''
+
+        filters = [field for field in [state, town, vendor] if field]
+
+        if not filters:
+            flash('No seleccionaste ningún filtro.', 'warning')
+            return redirect(url_for('shop.products'))
+        
+        query = ' AND '.join(filters)
+        print(f'{query = }')
+
+        return redirect(url_for('shop.query_products', query=query))
+
+    return render_template('products_search.html', form=form)
+
+@bp.route('/query_products', methods=['GET', 'POST'])
+@login_required
+def query_products():
+    query = request.args.get('query')
+    print(query)
+    if not query:
+        flash('Something went wrong.', 'error')
+        current_app.logger.error('No query was entered.')
+        return redirect(url_for('dashboard.index'))
+    
+    nodes, cursor = get_variants_using_query(query)
+
+    # if cursor: # TODO along with the to-do inget_variants_using_query()
+        # show next page button
+    prods = []
+    for node in nodes:
+        metafields = {meta['key']: meta['value'] for meta in node['metafields']['nodes']}
+        prod = {
+            'vendor': node['vendor'],
+            'title': node['title'],
+            'pueblo': metafields.get('custom.pueblo'),
+            'estado': metafields.get('custom.estado'),
+            'variants': [{
+                'title': variant['title'],
+                'unitCost': variant['inventoryItem']['unitCost']['amount'],
+                'costHistory': variant['metafield']['jsonValue'] if variant['metafield'] else None,
+                'price': variant['price'],
+                'sku': variant['sku'],
+                'quantityAvailable': variant['inventoryItem']['inventoryLevel']['quantities'][0]['quantity'],
+            } for variant in node['variants']['nodes']],
+        }
+        prods.append(prod)
+
+    
+    return render_template('products_results.html', products=prods)

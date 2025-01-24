@@ -1,0 +1,86 @@
+<!--
+Requires:
+- new_query_btn: SumbitForm
+- products: list[dict]
+Each product:
+- 'vendor'
+- 'title'
+- 'pueblo'
+- 'estado'
+- 'variants': list[dict] = [
+  {
+  - 'title'
+  - 'unitCost'
+  - 'costHistory'
+  - 'price'
+  - 'sku'
+  - 'quantityAvailable'
+  }
+]
+-->
+{% import 'bootstrap_wtf.html' as wtf %}
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Resultados de búsqueda</h1>
+
+<div class="d-flex justify-content-between">
+  <p>Limitaciones: por ahora solo muestra las primeras 5 variantes de cada producto.</p>
+  <a href="{{ url_for('shop.products') }}">Nueva búsqueda</a>
+</div>
+
+
+<hr>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th scope="col">Artesano</th>
+      <th scope="col">Título</th>
+      <th scope="col">Lugar de origen</th>
+      <th scope="col">Título de Variante</th>
+      <th scope="col">Precio de Compra</th>
+      <th scope="col">Historial Compras</th>
+      <th scope="col">Precio de Venta</th>
+      <th scope="col">Clave (SKU)</th>
+      <th scope="col">Cantidad</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% if products %}
+      {% for prod in products %}
+      {% for variant in prod['variants'] %}
+      <tr>
+        <td>{{ prod['vendor'] }}</td>
+        <td>{{ prod['title'] }}</td>
+        <td>
+          {{ prod['pueblo'] }},<br>{{ prod['estado'] }}
+        </td>        
+        <td>{{ variant['title'] }}</td>
+        <td>{{ variant['unitCost'] }}</td>
+        <td>
+          {% for restock in variant['costHistory'] %}
+          <ul>
+            <li>
+              <b>Fecha: </b> {{ restock['fecha de compra'] }}<br>
+              <b>Cantidad: </b> {{ restock['cantidad'] }}<br>
+              <b>Costo: </b> {{ restock['costo'] }}<br>
+            </li>
+          </ul>
+          {% endfor %}
+        </td>
+        <td>{{ variant['price'] }}</td>
+        <td>{{ variant['sku'] }}</td>
+        <td>{{ variant['quantityAvailable'] }}</td>
+      </tr>
+      {% endfor %}
+      {% endfor %}
+    {% else %}
+      <tr>
+        <td colspan="9" class="text-center">No hay datos disponibles</td>
+      </tr>
+    {% endif %}
+  </tbody>
+</table>
+
+{% endblock %}

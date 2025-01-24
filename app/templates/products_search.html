@@ -1,0 +1,14 @@
+<!-- 
+Requires:
+- form: QueryProductsForm
+-->
+{% import 'bootstrap_wtf.html' as wtf %}
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1>Buscar productos</h1>
+
+{{ wtf.quick_form(form) }}
+
+{% endblock %}

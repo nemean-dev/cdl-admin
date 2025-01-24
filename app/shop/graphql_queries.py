@@ -41,6 +41,53 @@ get_variants_by_sku=\
 # TODO since we are using compareDigest to guarantee integrity, and to keep data clean, 
 # I should not allow 2 entries for the same sku in 'actualizar cantidades'
 
+get_variants_from_products_query=\
+'''
+query GetVariantsFromProductsQuery {
+  products(first: 50, query:"%s") {
+    nodes {
+      vendor
+      title
+      metafields (first:2, keys:["custom.estado","custom.pueblo"]) {
+        nodes {
+          key
+          value
+        }
+      }
+      variants (first: 5) {
+        nodes {
+          title
+          price
+          sku
+          inventoryItem {
+            id
+            unitCost {
+              amount
+            }
+            inventoryLevel(locationId: "gid://shopify/Location/101430165822") {
+              quantities (names: ["available"]) {
+                quantity
+              }
+            }
+          }
+          metafield (namespace: "custom", key: "cost_history") {
+            jsonValue
+          }
+        }
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+'''
+
 set_variant_cost=\
 '''
 mutation inventoryItemUpdate($id: ID!, $input: InventoryItemInput!) {

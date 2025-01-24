@@ -98,7 +98,10 @@ def graphql_query(query: str, variables: dict = None) -> requests.Response:
     return res
 
 def raise_for_user_errors(res: requests.Response, queried_field: str):
-    """queried_field is the top level field of the query."""
+    """
+    This function should only be used with mutations.
+    queried_field is the top level field of the mutation.
+    """
     try:
         user_errors = res.json()['data'][queried_field]['userErrors']
     except KeyError:

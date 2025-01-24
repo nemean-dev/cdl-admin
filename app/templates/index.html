@@ -14,7 +14,7 @@
   <li><a href="{{ url_for('shop.captura') }}">Subir productos en captura</a></li>
   <li><a href="{{ url_for('shop.update_product_quantities') }}">Actualizar cantidades</a></li>
   <li><a href="{{ url_for('shop.etiquetas') }}">Imprimir etiquetas</a></li>
-  <li><a class="disabled-link" href="{{ url_for('shop.products') }}">Obtener productos por proveedor/estado/etc</a></li>
+  <li><a href="{{ url_for('shop.products') }}">Obtener lista de productos por proveedor/estado/pueblo</a></li>
   <li><a class="disabled-link" href="#">Reporte de ventas</a></li>
   {% if current_user.is_superadmin %}
   <li><a href="{{ url_for('auth.register_users') }}">Agregar administradores</a></li>
