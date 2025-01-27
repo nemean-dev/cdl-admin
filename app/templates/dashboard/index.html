@@ -8,22 +8,37 @@
 
 <hr>
 
-<h2>Acciones</h2>
+<div class="row">
 
-<ul>
-  <li><a href="{{ url_for('shop.captura') }}">Subir productos en captura</a></li>
-  <li><a href="{{ url_for('shop.update_product_quantities') }}">Actualizar cantidades</a></li>
-  <li><a href="{{ url_for('shop.etiquetas') }}">Imprimir etiquetas</a></li>
-  <li><a href="{{ url_for('shop.products') }}">Obtener lista de productos por proveedor/estado/pueblo</a></li>
-  <li><a class="disabled-link" href="#">Reporte de ventas</a></li>
-  {% if current_user.is_superadmin %}
-  <li><a href="{{ url_for('auth.register_users') }}">Agregar administradores</a></li>
-  {% endif %}
-  <li><a href="{{ url_for('dashboard.loading') }}">Test Loading page</a></li>
-</ul>
-<a href="{{ url_for('dashboard.action_log') }}">Ver historial de acciones</a>
+  <div class="col-12 col-lg-4 mb-3" id="captura">
+    <h2>Captura</h2>
 
-<h2>Links externos</h2>
+    <div class="list-group">
+      <a href="{{ url_for('shop.captura') }}" class="list-group-item list-group-item-action">Publicar nuevos productos y variantes</a>
+      <a href="{{ url_for('shop.update_product_quantities') }}" class="list-group-item list-group-item-action">Actualizar cantidades</a>
+      <a href="{{ url_for('shop.etiquetas') }}" class="list-group-item list-group-item-action">Imprimir etiquetas</a>
+    </div>
+  </div>
+  
+  <div class="col-6 col-lg-4 mb-3" id="administrar">
+    <h2>Administrar</h2>
+    <div class="list-group">
+      <a href="{{ url_for('auth.register_users') }}" class="list-group-item list-group-item-action">Agregar administradores</a>
+      <a href="{{ url_for('dashboard.action_log') }}" class="list-group-item list-group-item-action">Ver historial de acciones</a>
+    </div>
+  </div>
+
+  <div class="col-6 col-lg-4 mb-3" id="otras acciones">
+    <h2>Otros</h2>
+    <div class="list-group">
+      <a href="{{ url_for('shop.products') }}" class="list-group-item list-group-item-action">Obtener lista de productos por proveedor/estado/pueblo</a>
+      <a href="#" class="list-group-item list-group-item-action disabled">Reporte de ventas</a>
+    </div>
+  </div>
+</div>
+
+
+<h2 class="mt-3">Links externos</h2>
 <ul>
   <li><a href="https://admin.shopify.com/store/{{ config['SHOPIFY_STORE'] }}/products?selectedView=all" 
     target="_blank" rel="noopener noreferrer">Shopify</a>
@@ -40,7 +55,6 @@
   <li><a href="https://github.com/nemean-dev/cdl-admin">Repository</a></li>
   {% endif %}
 </ul>
-
 
 <h2>Viajes</h2>
 <p>links a viajes</p>
