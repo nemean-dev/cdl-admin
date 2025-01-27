@@ -59,7 +59,7 @@ def update_product_quantities():
                         data=data, time=time, enable_upload=enable_upload_btn)
     
     if refresh_form.validate_on_submit():
-        sheety = fetch_inventory_updates()        
+        sheety = fetch_inventory_updates()
 
         if sheety.shape[0] == 0:
             flash('No se encontraron productos en Google Sheets', 'error')
@@ -72,7 +72,18 @@ def update_product_quantities():
 
         return redirect(url_for('shop.update_product_quantities'))
     
-@bp.route('/subir_inventario_shopify', methods=['POST'])
+@bp.route('/subir-cantidades', methods=['POST'])
+@login_required
+def start_upload_product_quantities():
+    form = SubmitForm()
+
+    if form.validate_on_submit():
+        return redirect(url_for('dashboard.loading', 
+                                process_description='Actualizando Inventario...', 
+                                process_view='shop.upload_product_quantities',
+                                final_view='shop.update_product_quantities'))
+    
+@bp.route('/subir-cantidades-shopify')
 @login_required
 def upload_product_quantities():
     # TODO: view is dirty but working... needs a lot of refactoring
@@ -171,7 +182,7 @@ def upload_product_quantities():
     db.session.add(update_cost_history_action)
     db.session.commit()
 
-    return redirect(url_for('shop.update_product_quantities'))
+    return "finished"
 
 @bp.route('/captura')
 @login_required

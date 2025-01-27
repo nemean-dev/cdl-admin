@@ -57,14 +57,15 @@ def user_settings():
     return render_template('dashboard/user_settings.html', title='Editar Perfil', form=form)
 
 @bp.route('/loading')
+@login_required
 def loading():
     """
     Loading page that sends a request to process_view and redirects to final_view once the process is finished
     """
-    process_description = request.args.get('process_name') or ''
+    process_description = request.args.get('process_description') or ''
     process_view = request.args.get('process_view') or 'dashboard.wait'
     final_view = request.args.get('final_view') or 'dashboard.index'
-    return render_template('loading.html', process= url_for(process_view, seconds=30),
+    return render_template('loading.html', process= url_for(process_view),
                            final_url= url_for(final_view),
                            process_description= process_description)
 
