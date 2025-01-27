@@ -1,19 +1,18 @@
 {% extends "base.html" %}
+{% import "actions.html" as acts %}
 
 {% block content %}
-    <h2>{{ user.fname + ' ' + (user.lname or '') if user.fname else 'Perfil'}}</h1>
-    <ul>
-        <li>Email: {{ user.email }}</li>
-        <li>Nombre: {{ (user.fname or '') + ' ' + (user.lname or '') }}</li>
-        {{ endwith }}
-        <li>Última visita: {{ user.last_seen }}</li>
-    </ul>
-    {% if user == current_user %}
-        <p><a href="{{ url_for('dashboard.user_settings') }}">Editar</a></p>
-    {% endif %}
-    <hr>
-    <h2>Acciones</h2>
-    {% for action in actions %}
-    {% include '_action.html' %}
-    {% endfor %}
+  <h2>{{ user.fname + ' ' + (user.lname or '') if user.fname else 'Perfil'}}</h1>
+  <ul>
+    <li>Email: {{ user.email }}</li>
+    <li>Nombre: {{ (user.fname or '') + ' ' + (user.lname or '') }}</li>
+    {{ endwith }}
+    <li>Última visita: {{ user.last_seen }}</li>
+  </ul>
+  {% if user == current_user %}
+    <p><a href="{{ url_for('dashboard.user_settings') }}">Editar</a></p>
+  {% endif %}
+  <hr>
+  <h2>Acciones</h2>
+  {{ acts.action_table(actions) }}
 {% endblock %}

@@ -31,7 +31,7 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
-    
+
 class AdminAction(db.Model):
     id: orm.Mapped[int] = orm.mapped_column(primary_key=True)
     timestamp: orm.Mapped[datetime] = orm.mapped_column(
@@ -43,7 +43,15 @@ class AdminAction(db.Model):
     user_id: orm.Mapped[int] = orm.mapped_column(sa.ForeignKey(User.id),
                                                  index=True)
     admin: orm.Mapped[User] = orm.relationship(back_populates='actions')
+    files: orm.WriteOnlyMapped['File'] = orm.relationship(
+        back_populates='admin_action')
 
     def __repr__(self):
         return '<AdminAction {}>'.format(self.action)
     
+class File(db.Model):
+    id: orm.Mapped[int] = orm.mapped_column(primary_key=True)
+    path: orm.Mapped[str] = orm.mapped_column(sa.String(256))
+    admin_action_id: orm.Mapped[int] = orm.mapped_column(
+        sa.ForeignKey(AdminAction.id), index=True)
+    admin_action: orm.Mapped[AdminAction] = orm.relationship(back_populates='files')
