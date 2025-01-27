@@ -19,13 +19,13 @@ def before_request():
 @bp.route('/index')
 @login_required
 def index():
-    return render_template('index.html')
+    return render_template('dashboard/index.html')
 
 @bp.route('/action-log')
 @login_required
 def action_log():
     actions = db.session.scalars(sa.select(AdminAction)).all()
-    return render_template('action_log.html', actions=actions) #TODO add pagination here and in the user profiles
+    return render_template('dashboard/action_log.html', actions=actions) #TODO add pagination here and in the user profiles
 
 @bp.route('/user/<id>')
 @login_required
@@ -36,7 +36,7 @@ def user(id):
 
     actions = db.session.scalars(sa.select(AdminAction).where(AdminAction.admin == user))
 
-    return render_template('user.html', user=user, actions=actions)
+    return render_template('dashboard/user.html', user=user, actions=actions)
 
 @bp.route('/settings', methods=['GET', 'POST'])
 @login_required
@@ -54,7 +54,7 @@ def user_settings():
         form.fname.data = current_user.fname
         form.lname.data = current_user.lname
 
-    return render_template('user_settings.html', title='Editar Perfil', form=form)
+    return render_template('dashboard/user_settings.html', title='Editar Perfil', form=form)
 
 @bp.route('/loading')
 def loading():

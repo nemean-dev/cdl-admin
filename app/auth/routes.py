@@ -31,12 +31,12 @@ def login():
             flash('Email o contraseña incorrectos')
             return redirect(url_for('auth.login'))
     
-    return render_template('login.html', title='Inicio de sesión', form=form)
+    return render_template('auth/login.html', title='Inicio de sesión', form=form)
 
 @bp.route('/logout')
 def logout():
     logout_user()
-    return redirect(url_for('dashboard.index'))
+    return redirect(url_for('auth.login'))
 
 @bp.route('/register-users', methods=['GET', 'POST'])
 @login_required
@@ -65,4 +65,4 @@ def register_users():
 
         return redirect(url_for('auth.register_users'))
     
-    return render_template('register_users.html', form=form)
+    return render_template('auth/register_users.html', form=form)

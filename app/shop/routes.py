@@ -54,7 +54,7 @@ def update_product_quantities():
                 if row.get('costHistory'):
                     row['costHistory'] = json.loads(row['costHistory'])
 
-        return render_template('actualizar_cantidades.html', 
+        return render_template('shop/actualizar_cantidades.html', 
                         refresh_form=refresh_form, confirm_form=confirm_form, 
                         data=data, time=time, enable_upload=enable_upload_btn)
     
@@ -176,11 +176,11 @@ def upload_product_quantities():
 @bp.route('/captura')
 @login_required
 def captura():
-    return render_template('captura.html', title='Captura')
+    return render_template('shop/captura.html', title='Captura')
 
 @bp.route('/etiquetas')
 def etiquetas():    
-    return render_template('price_tags.html', title='Etiquetas')
+    return render_template('shop/price_tags.html', title='Etiquetas')
 
 @bp.route('/productos', methods=['GET', 'POST'])
 @login_required
@@ -203,7 +203,7 @@ def products():
 
         return redirect(url_for('shop.query_products', query=query))
 
-    return render_template('products_search.html', form=form)
+    return render_template('shop/products_search.html', form=form)
 
 @bp.route('/query_products', methods=['GET', 'POST'])
 @login_required
@@ -239,4 +239,4 @@ def query_products():
         prods.append(prod)
 
     
-    return render_template('products_results.html', products=prods)
+    return render_template('shop/products_results.html', products=prods)
