@@ -1,0 +1,80 @@
+<!-- Macro
+products_table(products: list[dict], columns:list[str])
+
+Params:
+- `products` is list of products where each product is a dict with keys from 
+`columns`
+  - Variant fields can be inside a `variants` list of dicts or can be directly 
+  in the product along with product fields
+- `columns` is a list of fileds to be included in the table 
+e.g. ['vendor', 'title', 'sku', 'price', 'costHistory']
+
+Possible fields
+field: column_name
+- 'vendor': Proveedor
+- 'title': Título
+- 'variants':
+  - 'sku': Clave (SKU)
+  - 'quantityDelta': Cantidad a Agregar
+  - 'quantity': Cantidad Actual
+  - 'cost': Último Costo/Unidad
+  - 'costHistory': Fecha de Compra
+  - 'newCost': Nuevo Precio de Compra  #ignored if costHistory is given
+  - 'price': Precio
+  - 'newPrice': Nuevo Precio de Venta
+-->
+{% set cols_dict = {
+  'vendor': 'Proveedor',
+  'title': 'Título',
+  'variants':,
+  'sku': 'Clave (SKU)',
+  'quantityDelta': 'Cantidad a Agregar',
+  'quantity': 'Cantidad Actual',
+  'cost': 'Último Costo/Unidad',
+  'costHistory': 'Fecha de Compra',
+  'newCost': 'Nuevo Precio de Compra  #ignored if costHistory is given',
+  'price': 'Precio',
+  'newPrice': 'Nuevo Precio de Venta',
+} %}
+
+{% macro products_table(products) %}
+<table id="product-data" class="table">
+  <thead>
+    <tr>
+      {% for col in columns %}
+      {%if cols_dict[col] %}
+        <th scope="col">{{ cols_dict[col] }}</th>
+      {% endif %}
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% if products %}
+    {% for prod in products %}
+    
+    {% if not prod['errors'] %}
+    <tr>
+      {% for field in columns %}
+        <td>{{ prod[field] }}</td>
+      {% endfor %}
+    </tr>
+    {% else %}
+    <tr class="table-danger">
+      {% if prod['sku'] %}
+        <td>{{ prod['sku'] }}</td>
+        <td colspan="{{ len(columns) - 1 }}">{{ prod['errors'] }}</td>
+      {% else %}
+        <td colspan="{{ len(columns) }}">{{ prod['errors'] }}</td>
+      {% endif %}
+    </tr>
+    {% endif %}
+
+    {% endfor %}
+    {% else %}
+    <tr>
+      <td colspan="6" class="text-center">No hay datos disponibles</td>
+    </tr>
+    {% endif %}
+  </tbody>
+</table>
+{% endmacro %}
