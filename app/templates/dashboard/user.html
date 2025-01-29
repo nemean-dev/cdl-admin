@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% import "dashboard/actions.html" as acts %}
+{% import "dashboard/_actions.html" as acts %}
 
 {% block content %}
   <h2>{{ user.fname + ' ' + (user.lname or '') if user.fname else 'Perfil'}}</h1>

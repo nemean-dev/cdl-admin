@@ -6,7 +6,7 @@
 
 <ol>
   <li>Verificar productos en Google Sheets -
-    <a href="#" class="disabled-link">Captura</a>
+    <a href="https://docs.google.com/spreadsheets/d/1-TYXH94SOHCJhlrdFV_nKYnfGRxa3yEGzLHvIIoC3l4/edit?gid=0#gid=0">Captura</a>
   </li>
   <li>Confirmación</li>
   <li>Subir a Shopify</li>
@@ -18,22 +18,4 @@
   <button id="next" class="disabled-button" disabled>Next</button>
 </div>
 
-{% endblock %}
-
-{% block scripts %}
-<script>
-  setTimeout(() => {
-    const nextBtn = document.getElementById('next');
-    const result = document.getElementById('result');
-
-    if (nextBtn) {
-      nextBtn.disabled = false;
-      nextBtn.classList.remove('disabled-button');
-    }
-
-    if (result) {
-      result.textContent = "No se encontró ningún error";
-    }
-  }, 4000);
-</script>
 {% endblock %}
