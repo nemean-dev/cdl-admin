@@ -55,8 +55,23 @@ field: column_name
     
     {% if not prod['errors'] or prod['errors'] == 'none' %}
     <tr>
-      {% for field in columns %}
-        <td>{{ prod[field] }}</td>
+      {% for field in columns%}
+        {% if field == "costHistory" %}
+          <!-- <td><a id="" href="">{{ prod['costHistory']['value'][-1]['fecha de compra'] }}</a></td> -->
+          <td>
+            <a href="#" data-bs-toggle="tooltip" data-bs-html="true" 
+               data-bs-custom-class="custom-tooltip" 
+               title="
+                 {% for item in prod['costHistory']['value'][-3:] %}
+                   {{ item['fecha de compra'] }}<br>Costo: {{ item['costo'] }} Cantidad: {{ item['cantidad'] }}<br>
+                 {% endfor %}
+               ">
+               {{ prod['costHistory']['value'][-1]['fecha de compra'] | default('NaN') }}
+            </a>
+          </td>                 
+        {% else %}
+          <td>{{ prod[field] }}</td>
+        {% endif %}
       {% endfor %}
     </tr>
     {% else %}

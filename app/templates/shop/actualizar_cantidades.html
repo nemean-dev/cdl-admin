@@ -11,6 +11,7 @@ field that is set to 'none' if no errors
 -->
 
 {% extends 'base.html' %}
+{% import "_products.html" as prods %}
 
 {% block content %}
 {% if enable_upload %}
@@ -53,47 +54,7 @@ field that is set to 'none' if no errors
 
 <hr>
 
-<table id="product-data" class="table">
-  <thead>
-    <tr>
-      <th scope="col">Clave (SKU)</th>
-      <th scope="col">Cantidad</th>
-      <th scope="col">Título</th>
-      <th scope="col">Proveedor</th>
-      <th scope="col">Nuevo Precio de Compra</th>
-      <th scope="col">Nuevo Precio de Venta</th>
-      <th scope="col">Fecha de Compra</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% if data %}
-    {% for row in data %}
-    
-    {% if row['errors'] == 'none' %}
-    <tr>
-      <td>{{ row['sku'] }} {{ qty }}</td>
-      <td>{{ row['quantity'] | default('NaN') }}</td>
-      <td>{{ row['displayName'] | default('NaN') }}</td>
-      <td>{{ row['vendor'] | default('NaN') }}</td>
-      <td>{{ row['newCost'] | default('NaN') }}</td>
-      <td>{{ row['newPrice'] | default('NaN') }}</td>
-      <td>{{ row['costHistory']['value'][-1]['fecha de compra'] | default('NaN') }}</td>
-    </tr>
-      
-    {% else %}
-    <tr class="table-danger">
-      <td>{{ row['sku'] }}</td>
-      <td colspan="5">{{ row['errors'] }}</td>
-    </tr>
-    {% endif %}
-    {% endfor %}
-    {% else %}
-    <tr>
-      <td colspan="6" class="text-center">No hay datos disponibles</td>
-    </tr>
-    {% endif %}
-  </tbody>
-</table>
+{{ prods.products_table(data, ['sku', 'quantity', 'displayName', 'vendor', 'newCost', 'newPrice', 'costHistory']) }}
 
 {% endblock %}
 
