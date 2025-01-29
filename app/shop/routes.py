@@ -239,12 +239,12 @@ def query_products():
             'pueblo': metafields.get('custom.pueblo'),
             'estado': metafields.get('custom.estado'),
             'variants': [{
-                'title': variant['title'],
-                'unitCost': variant['inventoryItem']['unitCost']['amount'],
-                'costHistory': variant['metafield']['jsonValue'] if variant['metafield'] else None,
+                'variantTitle': variant['title'],
+                'cost': variant['inventoryItem']['unitCost']['amount'],
+                'costHistory': variant['metafield'] if variant['metafield'] else None,
                 'price': variant['price'],
                 'sku': variant['sku'],
-                'quantityAvailable': variant['inventoryItem']['inventoryLevel']['quantities'][0]['quantity'],
+                'quantity': variant['inventoryItem']['inventoryLevel']['quantities'][0]['quantity'],
             } for variant in node['variants']['nodes']],
         }
         prods.append(prod)
