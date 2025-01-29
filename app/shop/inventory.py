@@ -53,9 +53,11 @@ def complete_sheety_data(sheety_df: pd.DataFrame) -> pd.DataFrame:
     for index, row in sheety_df.iterrows():
         sku = row.get('clave (sku)',            nan)
         if not sku or sku != sku: continue
-        new_price = row.get('nuevoPrecioVenta', nan) # TODO: remove these 3 `nan` and instead make sure the sheety module returns all columns
+        new_price = row.get('nuevoPrecioVenta', nan) # TODO: remove these 4 `nan` and instead make sure the sheety module returns all columns
         new_cost = row.get('nuevoPrecioCompra', nan)
-        qty = int(row.get('cantidadAAgregar', 0))
+        qty = row.get('cantidadAAgregar', nan)
+        if qty == qty:
+            qty = int(qty)
         fecha_de_compra = row.get('fechaDeCompra (yyyyMmDd)', nan)
         if fecha_de_compra != fecha_de_compra: #if fecha de compra is nan
             fecha_de_compra = datetime.now(timezone(timedelta(hours=-6))).strftime('%Y-%m-%d') #TODO: make env variable for the store's local timezone and use throughout app. Also in db.
