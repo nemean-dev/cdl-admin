@@ -15,6 +15,7 @@ field: column_name
 - 'title': Título
 - 'variants':
   - 'sku': Clave (SKU)
+  - 'displayName': Título de variante
   - 'quantityDelta': Cantidad a Agregar
   - 'quantity': Cantidad Actual
   - 'cost': Último Costo/Unidad
@@ -26,18 +27,18 @@ field: column_name
 {% set cols_dict = {
   'vendor': 'Proveedor',
   'title': 'Título',
-  'variants':,
   'sku': 'Clave (SKU)',
+  'displayName': 'Título de variante',
   'quantityDelta': 'Cantidad a Agregar',
   'quantity': 'Cantidad Actual',
   'cost': 'Último Costo/Unidad',
   'costHistory': 'Fecha de Compra',
-  'newCost': 'Nuevo Precio de Compra  #ignored if costHistory is given',
+  'newCost': 'Nuevo Precio de Compra',
   'price': 'Precio',
   'newPrice': 'Nuevo Precio de Venta',
 } %}
 
-{% macro products_table(products) %}
+{% macro products_table(products, columns) %}
 <table id="product-data" class="table">
   <thead>
     <tr>
@@ -52,7 +53,7 @@ field: column_name
     {% if products %}
     {% for prod in products %}
     
-    {% if not prod['errors'] %}
+    {% if not prod['errors'] or prod['errors'] == 'none' %}
     <tr>
       {% for field in columns %}
         <td>{{ prod[field] }}</td>
@@ -62,9 +63,9 @@ field: column_name
     <tr class="table-danger">
       {% if prod['sku'] %}
         <td>{{ prod['sku'] }}</td>
-        <td colspan="{{ len(columns) - 1 }}">{{ prod['errors'] }}</td>
+        <td colspan="{{ columns|length - 1 }}">{{ prod['errors'] }}</td>
       {% else %}
-        <td colspan="{{ len(columns) }}">{{ prod['errors'] }}</td>
+        <td colspan="{{ columns|length }}">{{ prod['errors'] }}</td>
       {% endif %}
     </tr>
     {% endif %}
