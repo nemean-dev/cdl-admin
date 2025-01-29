@@ -4,6 +4,9 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 class Config:
     SECRET_KEY = os.getenv('SECRET_KEY') or '421a8124af2a47529272631abf3d0218'
 
+    GSHEETS_CREDENTIALS = os.getenv("GSHEETS_CREDENTIALS", "./gsheets_credentials.json")
+    GSHEETS_CAPTURA_ID = os.getenv('GSHEETS_CAPTURA_ID')
+
     # use real store or testing store?
     USE_REAL_STORE=int(os.getenv('USE_REAL_STORE'))
     if USE_REAL_STORE == 1:  #TODO: there's a better way

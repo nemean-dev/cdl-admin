@@ -1,5 +1,6 @@
 app/static/pdfs
-resources/nginx_config.txt
+resources/misc
+*credentials.json
 data
 
 *__pycache__*
