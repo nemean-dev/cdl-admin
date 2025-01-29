@@ -8,7 +8,7 @@ from app.models import AdminAction
 from app.shop import bp
 from app.shop.forms import SubmitForm, QueryProductsForm
 from app.shop.price_tags import generate_pdf
-from app.shop.sheety import clear_inventory_updates_sheet, fetch_etiquetas, fetch_inventory_updates
+from app.integrations.sheety import clear_inventory_updates_sheet, fetch_etiquetas, fetch_inventory_updates
 from app.shop.inventory import get_local_inventory, delete_local_inventory, write_local_inventory, complete_sheety_data,\
     adjust_variant_quantities, set_variant_price, set_variant_cost, set_metafields, get_variants_using_query
 

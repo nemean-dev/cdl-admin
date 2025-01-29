@@ -6,7 +6,7 @@ import pandas as pd
 from numpy import nan
 from flask import current_app
 import app.shop.graphql_queries as q
-from app.shop.shopify import graphql_query, raise_for_user_errors
+from app.integrations.shopify import graphql_query, raise_for_user_errors
 
 base_path = os.path.join(os.getcwd(), 'data/update_quantities')
 quantities_file_path = os.path.join(base_path, 'quantities.csv')
