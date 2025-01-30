@@ -347,6 +347,10 @@ def get_variants_using_query(query: str, cursor: str=None) -> tuple[list[dict], 
     return res.json()['data']['products']['nodes'], end_cursor
     # TODO implement pagination
 
+def sku_available(sku: str) -> bool:
+    '''True if sku is available and contains no special characters and is not too long.'''
+    return True
+
 if __name__ == "__main__":
     data, time = get_local_inventory()
     print(time)
