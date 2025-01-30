@@ -57,9 +57,6 @@ This function does not support errors
   'newPrice': 'Nuevo Precio de Venta',
   'quantityAvailable': "Cantidad 'available'",
   'dateOfPurchase': 'Fecha de Compra',
-
-  'errors': 'Errores',
-  'warnings': 'Advertensias',
 } %}
 
 {% macro unit_cost_td(prod_history) %}
@@ -94,32 +91,30 @@ This function does not support errors
     {% if products %}
     {% for prod in products %}
     
-    {% if not prod['errors'] or prod['errors'] == 'none' %}
-    <tr>
-      {% for field in columns%}
-        {% if field == "costHistory" %}
-          {{ unit_cost_td(prod['costHistory']) }}
-        {% else %}
-          <td>{{ prod[field] }}</td>
-        {% endif %}
-      {% endfor %}
-    </tr>
-    {% else %}
-    <tr class="table-danger">
-      {% if prod['sku'] %}
-        <td>{{ prod['sku'] }}</td>
-        <td colspan="{{ columns|length() - 1 }}">{{ prod['errors'] }}</td>
+    <!-- TODO: remove the prod['error'] != 'none' condition by changing views that send it like this -->
+      {% if prod['errors'] and prod['errors'] != 'none' %} 
+      <tr class="table-danger">
+      {% elif prod['warnings'] %}
+      <tr class="table-warning">
       {% else %}
-        <td colspan="{{ columns|length() }}">{{ prod['errors'] }}</td>
+      <tr class="table-success">
       {% endif %}
-    </tr>
-    {% endif %}
+
+        {% for field in columns %}
+          {% if field == "costHistory" %}
+            {{ unit_cost_td(prod['costHistory']) }}
+          {% else %}
+            <td>{{ prod[field] }}</td>
+          {% endif %}
+        {% endfor %}
+
+      </tr>
 
     {% endfor %}
     {% else %}
-    <tr>
-      <td colspan="6" class="text-center">No hay datos disponibles</td>
-    </tr>
+      <tr>
+        <td colspan="columns|length" class="text-center">No hay datos disponibles</td>
+      </tr>
     {% endif %}
   </tbody>
 </table>
