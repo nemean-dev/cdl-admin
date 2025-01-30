@@ -55,3 +55,9 @@ class File(db.Model):
     admin_action_id: orm.Mapped[int] = orm.mapped_column(
         sa.ForeignKey(AdminAction.id), index=True)
     admin_action: orm.Mapped[AdminAction] = orm.relationship(back_populates='files')
+
+class Vendor(db.Model):
+    id: orm.Mapped[int] = orm.mapped_column(primary_key=True)
+    name: orm.Mapped[str] = orm.mapped_column(sa.String(256), index=True,
+                                             unique=True)
+    
