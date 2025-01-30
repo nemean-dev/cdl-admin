@@ -4,6 +4,7 @@ import sqlalchemy as sa
 from flask import Blueprint
 from app import db
 from app.models import Vendor
+from app.utils import simple_lower_ascii
 
 bp = Blueprint('cli', __name__)
 
@@ -19,9 +20,33 @@ def add_vendors(csv_path):
 
     vendors = df['Vendor'].unique()
     for name in vendors:
-        existing_vendor = db.session.scalar(sa.select(Vendor).where(Vendor.name == name))
-        if not existing_vendor:
-            new_vendor = Vendor(name=name)
+        print(f"Adding '{name}'...")
+        conflicting_vendor = db.session.scalar(sa.select(Vendor).where(Vendor.compare_name == simple_lower_ascii(name)))
+        if not conflicting_vendor:
+            new_vendor = Vendor()
+            new_vendor.set_name(name)
             db.session.add(new_vendor)
-    db.session.commit()
+
+        else:
+            existing_vendor = db.session.scalar(sa.select(Vendor).where(Vendor.name == name))
+            if existing_vendor:
+                continue
+            else: 
+                print(f"Failed to add {name} because there is already a vendor with a similar name: {conflicting_vendor.name}.")
+                print(f"Which name do you want to keep?\n  1. {conflicting_vendor.name}\n  2. {name}")
+
+                while True:
+                    user_input = input("Enter 1 or 2: ").strip()
+                    if user_input in {"1", "2"}:
+                        break
+                    print("Invalid input.")
+
+                if user_input == "1":
+                    continue
+                elif user_input == "2":
+                    conflicting_vendor.name = name
+                    db.session.add(conflicting_vendor)
+
+        db.session.commit()
+
     print('Vendors added successfully.')

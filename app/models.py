@@ -5,6 +5,7 @@ from flask_login import UserMixin
 import sqlalchemy as sa
 import sqlalchemy.orm as orm
 from app import db, login
+from app.utils import simple_lower_ascii, is_multiline
 
 @login.user_loader
 def load_user(id):
@@ -56,8 +57,21 @@ class File(db.Model):
         sa.ForeignKey(AdminAction.id), index=True)
     admin_action: orm.Mapped[AdminAction] = orm.relationship(back_populates='files')
 
+    def __repr__(self):
+        return '<File {}>'.format(self.path)
+
 class Vendor(db.Model):
     id: orm.Mapped[int] = orm.mapped_column(primary_key=True)
     name: orm.Mapped[str] = orm.mapped_column(sa.String(256), index=True,
                                              unique=True)
+    compare_name: orm.Mapped[str] = orm.mapped_column(sa.String(256), index=True,
+                                                      unique=True)
     
+    def __repr__(self):
+        return '<Vendor {}>'.format(self.name)
+    
+    def set_name(self, name):
+        if is_multiline(name):
+            raise ValueError('Multiline strings not allowed as Vendor names.')
+        self.name = name
+        self.compare_name = simple_lower_ascii(name) #lowered, no accents, and no multiple consecutive whitespace characters
