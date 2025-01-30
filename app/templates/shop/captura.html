@@ -1,3 +1,8 @@
+<!-- Requires:
+- products: list[dict]
+- column_list: list
+-->
+{% import '_products.html' as prods %}
 {% extends 'base.html' %}
 
 {% block content %}
@@ -12,23 +17,8 @@
   <li>Subir a Shopify</li>
 </ol>
 
-<div>
-  <h2 id="current-process">1. Verificar Productos</h3>
-  <p id="result">Verificando productos...</p>
-  <button id="next" class="disabled-button" disabled>Next</button>
-</div>
+<hr>
 
+{{ prods.products_table(products, column_list) }}
 
-<table border="1">
-  <tr>
-    <td rowspan="3">This cell spans 3 rows</td>
-    <td>Row 1, Cell 2</td>
-  </tr>
-  <tr>
-    <td>Row 2, Cell 2</td>
-  </tr>
-  <tr>
-    <td>Row 3, Cell 2</td>
-  </tr>
-</table>
 {% endblock %}

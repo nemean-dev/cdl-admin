@@ -11,6 +11,7 @@ from app.shop.price_tags import generate_pdf
 from app.integrations.sheety import clear_inventory_updates_sheet, fetch_etiquetas, fetch_inventory_updates
 from app.shop.inventory import get_local_inventory, delete_local_inventory, write_local_inventory, complete_sheety_data,\
     adjust_variant_quantities, set_variant_price, set_variant_cost, set_metafields, get_variants_using_query
+from app.shop.captura import get_captura, captura_clenup_and_validation
 
 @bp.route('/generar-pdf-etiquetas')
 @login_required
@@ -187,7 +188,11 @@ def upload_product_quantities():
 @bp.route('/captura')
 @login_required
 def captura():
-    return render_template('shop/captura.html', title='Captura')
+    df = get_captura()
+    column_list = ['vendor', 'title', 'sku', 'cost', 'price', 'quantityDelta', 'dateOfPurchase']
+    products = captura_clenup_and_validation(df)
+    
+    return render_template('shop/captura.html', title='Captura', products=products, column_list=column_list)
 
 @bp.route('/etiquetas')
 def etiquetas():    
