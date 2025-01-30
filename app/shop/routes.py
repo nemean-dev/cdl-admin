@@ -190,7 +190,7 @@ def upload_product_quantities():
 @login_required
 def captura():
     df = get_captura() # TODO make async
-    column_list = ['vendor', 'title', 'sku', 'cost', 'price', 'quantityDelta', 'dateOfPurchase']
+    column_list = ['vendor', 'title', 'sku', 'cost', 'price', 'quantityDelta', 'dateOfPurchase', 'errors', 'warnings']
     products = captura_clenup_and_validation(df)
     
     return render_template('shop/captura.html', title='Captura', products=products, column_list=column_list)

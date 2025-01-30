@@ -1,5 +1,9 @@
 import pandas as pd
 from flask import current_app
+import sqlalchemy as sa
+from app import db
+from app.models import Vendor
+from app.utils import simple_lower_ascii
 from app.integrations.gsheets import get_sheet_as_dataframe
 
 def get_captura() -> pd.DataFrame:
@@ -33,6 +37,10 @@ def captura_clenup_and_validation(captura: pd.DataFrame) -> list[dict]:
     If both lists are empty, it means the evaluation was successful for that product.
     '''
     df = captura.copy()
+
+    df['warnings'] = pd.NA
+    df['errors'] = pd.NA
+
     df = validate_vendors(df)
     df = validate_title(df)
     df = validate_skus(df)
@@ -42,11 +50,45 @@ def captura_clenup_and_validation(captura: pd.DataFrame) -> list[dict]:
 
     return df.to_dict(orient='records')
 
+def add_warning(df: pd.DataFrame, row_filter, message: str) -> None:
+    """Appends a warning message to the 'warnings' column for rows matching row_filter."""
+    df.loc[row_filter, 'warnings'] = df.loc[row_filter, 'warnings'].apply(
+        lambda x: f"{x}; {message}" if pd.notna(x) else message
+    )
+
+def add_error(df: pd.DataFrame, row_filter, message: str) -> None:
+    """Appends an error message to the 'errors' column for rows matching row_filter."""
+    df.loc[row_filter, 'errors'] = df.loc[row_filter, 'errors'].apply(
+        lambda x: f"{x}; {message}" if pd.notna(x) else message
+    )
+
 def validate_vendors(df) -> pd.DataFrame:
     '''
     - Matches with vendor db regardless of capitalization, accentuation, or multiple 
     spaces and punctuation. Replaces with the actual name in the db.
     '''
+    unique_vendors = df['vendor'].dropna().unique()
+
+    for vendor_name in unique_vendors:
+        # search for a corresponding vendor in db
+        normalised_vendor_name = simple_lower_ascii(vendor_name)        
+        vendor_in_db = db.session.scalar(sa.select(Vendor).where(Vendor.compare_name == normalised_vendor_name))
+
+        # rows corresponding to current iteration
+        row_filter = df['vendor'] == vendor_name
+
+        if vendor_in_db:
+            # if the entered name does not exactly match the db name
+            if vendor_name != vendor_in_db.name:
+                #update the df for the correct name
+                df.loc[row_filter, 'vendor'] = vendor_in_db.name
+                #add warning that row changed #TODO: keep this?
+                add_warning(df, row_filter, f"Artesano remombrado de '{vendor_name}' a '{vendor_in_db.name}'")
+
+        else:
+            # Add an error if no matching vendor was found in the database
+            add_error(df, df['vendor'] == vendor_name, f"El artesano '{vendor_name}' no existe en la base de datos. Si es un proveedor nuevo, <a href=\"#\">agrégalo</a>.")
+
     return df
 
 def validate_title(df) -> pd.DataFrame:
