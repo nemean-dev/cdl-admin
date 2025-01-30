@@ -22,14 +22,16 @@ def create_app(config_class=Config):
     login.init_app(app)
 
     # blueprints
+    from app.cli import bp as cli_bp
+    app.register_blueprint(cli_bp)
+    from app.dashboard import bp as dashboard_bp
+    app.register_blueprint(dashboard_bp)
     from app.auth import bp as auth_bp
     app.register_blueprint(auth_bp)
     from app.shop import bp as shop_bp
     app.register_blueprint(shop_bp)
     from app.errors import bp as errors_bp
     app.register_blueprint(errors_bp)
-    from app.dashboard import bp as dashboard_bp
-    app.register_blueprint(dashboard_bp)
 
     # logging and error emailing
     if int(app.config['USE_REAL_STORE']) == 1 or (not app.debug and not app.testing): #TODO: there's a better way
