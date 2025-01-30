@@ -1,0 +1,21 @@
+<!-- 
+Requires:
+- vendors: list[str]
+- pagination: dict
+-->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-3">Artesanos</h2>
+  <ul class="list-group">
+    {% for vendor in vendors.items %}
+      <li class="list-group-item">{{ loop.index + (vendors.page - 1) * vendors.per_page }}. {{ vendor.name }}</li>
+    {% endfor %}
+  </ul>
+
+  <!-- TODO: Paginationn controls -->
+</div>
+
+
+{% endblock %}

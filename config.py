@@ -44,3 +44,7 @@ class Config:
     # External links
     URL_WORKLOG=os.getenv('URL_WORKLOG')
     URL_KANBAN=os.getenv('URL_KANBAN')
+
+    # Customize app:
+    ADMIN_ACTIONS_PER_PAGE = 50
+    VENDORS_PER_PAGE = 50

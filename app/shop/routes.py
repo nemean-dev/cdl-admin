@@ -3,8 +3,9 @@ import json
 from datetime import datetime, timezone
 from flask import redirect, url_for, request, flash, render_template, send_file, current_app
 from flask_login import login_required, current_user
+import sqlalchemy as sa
 from app import db
-from app.models import AdminAction
+from app.models import AdminAction, Vendor
 from app.shop import bp
 from app.shop.forms import SubmitForm, QueryProductsForm
 from app.shop.price_tags import generate_pdf
@@ -188,7 +189,7 @@ def upload_product_quantities():
 @bp.route('/captura')
 @login_required
 def captura():
-    df = get_captura()
+    df = get_captura() # TODO make async
     column_list = ['vendor', 'title', 'sku', 'cost', 'price', 'quantityDelta', 'dateOfPurchase']
     products = captura_clenup_and_validation(df)
     
@@ -256,3 +257,22 @@ def query_products():
 
     
     return render_template('shop/products_results.html', products=prods)
+
+@bp.route('/artesanos')
+@login_required
+def vendors():
+    page = request.args.get('page', 1, int)
+    query = sa.select(Vendor).order_by(Vendor.name)
+
+    vendors = db.paginate(query, page=page, 
+                        per_page=current_app.config.get('VENDORS_PER_PAGE', 50), 
+                        error_out=False)
+    pagination = {
+        'page': page,
+        'next_url': url_for('shop.vendors', page=vendors.next_num) \
+            if vendors.has_next else None,
+        'prev_url': url_for('shop.vendors', page=vendors.prev_num) \
+            if vendors.has_prev else None,
+    }
+
+    return render_template('shop/vendors.html', vendors=vendors, pagination=pagination)
