@@ -75,3 +75,10 @@ class Vendor(db.Model):
             raise ValueError('Multiline strings not allowed as Vendor names.')
         self.name = name
         self.compare_name = simple_lower_ascii(name) #lowered, no accents, and no multiple consecutive whitespace characters
+
+class Metadata(db.Model):
+    key: orm.Mapped[str] = orm.mapped_column(sa.String(128), primary_key=True)
+    value: orm.Mapped[str] = orm.mapped_column(sa.Text, nullable=False)
+
+    def __repr__(self):
+        return f'<Metadata {self.key}: {self.value}>'
