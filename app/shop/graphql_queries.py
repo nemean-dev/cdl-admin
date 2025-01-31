@@ -167,3 +167,26 @@ mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
   }
 }
 '''
+
+product_set=\
+'''
+mutation CreateProdWithVariantInfo ($input: ProductSetInput!) {
+  productSet (input: $input) {
+    product {
+      id
+      handle
+      title
+      vendor
+      variantsCount {
+        count
+        precision
+      }
+    }
+    userErrors {
+      code
+      field
+      message
+    }
+  }
+}
+'''
