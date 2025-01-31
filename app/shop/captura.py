@@ -13,7 +13,7 @@ def get_captura() -> pd.DataFrame:
     # Get with gsheets connector
     captura_id = current_app.config['GSHEETS_CAPTURA_ID']
     creds = current_app.config['GSHEETS_CREDENTIALS']
-    df = get_sheet_as_dataframe(captura_id, 'Captura', creds)
+    df = get_sheet_as_dataframe(captura_id, 'Captura', creds, include_row_num=True)
 
     # rename cols
     df.rename(inplace=True, columns=
@@ -25,6 +25,7 @@ def get_captura() -> pd.DataFrame:
             'Precio Venta': 'price',
             'Fecha Compra': 'dateOfPurchase',
             'Cantidad': 'quantityDelta', #TODO: add who tagged the products. Can be managed in the app
+            'Row Number': 'rowNum'
         })
     
     return df

@@ -57,6 +57,8 @@ This function does not support errors
   'newPrice': 'Nuevo Precio de Venta',
   'quantityAvailable': "Cantidad 'available'",
   'dateOfPurchase': 'Fecha de Compra',
+
+  'rowNum': 'Renglón'
 } %}
 
 {% macro unit_cost_td(prod_history) %}
@@ -90,16 +92,19 @@ This function does not support errors
   <tbody>
     {% if products %}
     {% for prod in products %}
-    
+      {% set row_id = 'row' + prod['rowNum'] if prod['rowNum'] else '' %}
     <!-- TODO: remove the prod['error'] != 'none' condition by changing views that send it like this -->
-      {% if prod['errors'] and prod['errors'] != 'none' %} 
-      <tr class="table-danger">
-      {% elif prod['warnings'] %}
-      <tr class="table-warning">
-      {% else %}
-      <tr class="table-success">
-      {% endif %}
-
+      <tr id="{{ row_id }}" 
+        data-bs-toggle="modal" 
+        data-bs-target="#modal-{{ row_id }}"
+        {% if prod['errors'] and prod['errors'] != 'none' %} 
+          class="table-danger clickable-row"
+        {% elif prod['warnings'] %}
+          class="table-warning clickable-row"
+        {% else %}
+          class="table-success clickable-row"
+        {% endif %}
+      > 
         {% for field in columns %}
           {% if field == "costHistory" %}
             {{ unit_cost_td(prod['costHistory']) }}
@@ -107,10 +112,38 @@ This function does not support errors
             <td>{{ prod[field] }}</td>
           {% endif %}
         {% endfor %}
-
       </tr>
 
+      <!-- Bootstrap Modal for this product -->
+      <div class="modal fade" id="modal-{{ row_id }}" tabindex="-1" aria-labelledby="modalLabel-{{ row_id }}" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="modalLabel-{{ row_id }}">Detalles para el renglón {{ prod['rowNum'] }}</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              {% if prod['info'] %}
+                <strong>Info:</strong>
+                <p>{{ prod['info'] }}</p>
+              {% endif %}
+              {% if prod['warnings'] %}
+                <strong class="text-warning">Advertencias:</strong>
+                <p class="text-warning">{{ prod['warnings'] }}</p>
+              {% endif %}
+              {% if prod['errors'] %}
+                <strong class="text-danger">Errores:</strong>
+                <p class="text-danger">{{ prod['errors'] }}</p>
+              {% endif %}
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
     {% endfor %}
+
     {% else %}
       <tr>
         <td colspan="columns|length" class="text-center">No hay datos disponibles</td>
