@@ -46,7 +46,7 @@ field that is set to 'none' if no errors
 
       <form action="{{ url_for('shop.start_upload_product_quantities')}}" method="post" class="ms-3" novalidate>
         {{ confirm_form.hidden_tag() }}
-        {{ confirm_form.submit(class="btn btn-primary", onclick="return confirmAction();")}}
+        {{ confirm_form.submit(class="btn btn-primary", disabled=(not enable_upload), onclick="return confirmAction();")}}
       </form>
     </div>
   </div>
