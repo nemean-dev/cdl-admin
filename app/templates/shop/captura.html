@@ -1,26 +1,78 @@
 <!-- Requires:
 - products: list[dict]
 - column_list: list
+- refresh_form: SubmitForm
+- upload_form: UploadForm
+- errors: int
+- warnings: int
 -->
 {% import '_products.html' as prods %}
 {% extends 'base.html' %}
 
 {% block content %}
 
-<h1>Captura</h1>
 
-<ol>
-  <li>Verificar productos en Google Sheets -
-    <a href="https://docs.google.com/spreadsheets/d/1-TYXH94SOHCJhlrdFV_nKYnfGRxa3yEGzLHvIIoC3l4/edit?gid=0#gid=0">Captura</a>
-  </li>
-  <li>Confirmación</li>
-  <li>Subir a Shopify</li>
-</ol>
+<div class="d-flex justify-content-between align-items-end flex-wrap">
+  <div class="mb-1 align-self-start">
+    <h1>Captura</h1>
+    <ol>
+      <li>Verificar productos en Google Sheets -
+        <a href="https://docs.google.com/spreadsheets/d/1-TYXH94SOHCJhlrdFV_nKYnfGRxa3yEGzLHvIIoC3l4/edit?gid=0#gid=0">Captura</a>
+      </li>
+      <li>Confirmación</li>
+      <li>Subir a Shopify</li>
+    </ol>
+  </div>
 
+  <div class="d-flex flex-column">
+    {% if warnings and not errors %}
+    <p id="warnings-warning" class="text-secondary text-sm-end" style="width: 400px;">
+      Hay {{ warnings }} productos con advertencias.<br>Si quieres ignorar todas 
+      las advertencias y habilitar el botón de publicar, haz click 
+      <a href="#" onclick="enableUploadForm(); return false;">aquí</a>
+    </p>
+    {% endif %}
+    <div class="d-flex">
+      <form action="" method="post" novalidate>
+        {{ refresh_form.hidden_tag() }}
+        {{ refresh_form.submit(class="btn btn-primary") }}
+      </form>
+
+      <form action="{{ url_for('shop.start_upload_new_products')}}" method="post" class="ms-3" novalidate>
+        {{ upload_form.hidden_tag() }}
+        {{ upload_form.submit(id="upload-btn",class="btn btn-primary", disabled='disabled', onclick="return confirmAction();")}}
+      </form>
+    </div>
+  </div>
+</div>
 <hr>
 
 <p>Not ready for use, sku is not being checked.</p>
 
+<p>{{ errors }} products with errors</p>
+<p>{{ warnings }} products with warnings</p>
+
 {{ prods.products_table(products, column_list) }}
 
+{% endblock %}
+
+{% block scripts %}
+<!-- TODO: async script to load data in table when fetched. -->
+<script>
+  const uploadButton = document.querySelector('#upload-btn')
+  const errors = {{ errors }}
+  const warnings = {{ warnings }}
+  function confirmAction() {
+    return confirm('Los productos se subirán a shopify. ¿Estás seguro que deseas proceder?');
+  }
+  function enableUploadForm() {
+    uploadButton.disabled = false;
+    document.querySelector('#warnings-warning').classList.add('d-none')
+  }
+
+  if (errors==0 && warnings==0) {
+    uploadButton.disabled = false
+  }
+  
+</script>
 {% endblock %}

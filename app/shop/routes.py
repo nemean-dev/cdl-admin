@@ -60,7 +60,7 @@ def update_product_quantities():
                         refresh_form=refresh_form, confirm_form=confirm_form, 
                         data=data, time=time, enable_upload=enable_upload_btn)
     
-    if refresh_form.validate_on_submit():
+    if refresh_form.validate_on_submit():  # Only refresh_form targets this view on submit.
         sheety = fetch_inventory_updates()
 
         if sheety.shape[0] == 0:
@@ -74,7 +74,7 @@ def update_product_quantities():
 
         return redirect(url_for('shop.update_product_quantities'))
     
-@bp.route('/subir-cantidades', methods=['POST'])
+@bp.route('/proceso-subir-cantidades', methods=['POST'])
 @login_required
 def start_upload_product_quantities():
     form = SubmitForm()
@@ -186,14 +186,34 @@ def upload_product_quantities():
 
     return "finished"
 
-@bp.route('/captura')
+@bp.route('/captura', methods=['GET', 'POST'])
 @login_required
 def captura():
-    df = get_captura() # TODO make async
-    column_list = ['rowNum', 'vendor', 'title', 'sku', 'cost', 'price', 'quantityDelta', 'dateOfPurchase']
-    products = captura_clenup_and_validation(df)
+    refresh_form, upload_form = SubmitForm(), SubmitForm()
+    refresh_form.submit.label.text = 'Actualizar desde Google Sheets'
+    upload_form.submit.label.text = 'Subir a Shopify'
+
+    if request.method == 'GET':
+        df = get_captura() # TODO make async
+        column_list = ['rowNum', 'vendor', 'title', 'sku', 'cost', 'price', 'quantityDelta', 'dateOfPurchase']
+
+        products = captura_clenup_and_validation(df)
+        total_warnings = products['warnings'].count()
+        total_errors = products['errors'].count()
+        products = products.to_dict(orient='records')
+        
+        return render_template('shop/captura.html', title='Captura', 
+                               refresh_form=refresh_form, upload_form=upload_form,
+                               products=products, column_list=column_list, 
+                               errors=total_errors, warnings=total_warnings)
     
-    return render_template('shop/captura.html', title='Captura', products=products, column_list=column_list)
+    if refresh_form.validate_on_submit():
+        return redirect(url_for('shop.captura'))
+
+@bp.route('/proceso-subir-captura')
+@login_required
+def start_upload_new_products():
+    return 'Not yet implemented...'
 
 @bp.route('/etiquetas')
 def etiquetas():    

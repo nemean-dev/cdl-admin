@@ -30,7 +30,7 @@ def get_captura() -> pd.DataFrame:
     
     return df
 
-def captura_clenup_and_validation(captura: pd.DataFrame) -> list[dict]:
+def captura_clenup_and_validation(captura: pd.DataFrame) -> pd.DataFrame:
     '''
     Returns a cleaned up version of the dataframe with an additional columns 'errors' 
     and 'warnings':
@@ -52,7 +52,7 @@ def captura_clenup_and_validation(captura: pd.DataFrame) -> list[dict]:
     df = validate_fecha_compra(df)
     df = validate_quantity(df)
 
-    return df.to_dict(orient='records')
+    return df
 
 def add_warning(df: pd.DataFrame, row_filter, message: str) -> None:
     """Appends a warning message to the 'warnings' column for rows matching row_filter."""
