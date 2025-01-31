@@ -1,12 +1,16 @@
+import json
 from datetime import datetime, timedelta
 import pandas as pd
 from flask import current_app
 import sqlalchemy as sa
 from app import db
-from app.models import Vendor
+from app.models import Vendor, Metadata
 from app.utils import simple_lower_ascii, extra_strip, validate_spanish_characters, remove_whitespace, get_datestring
+from app.integrations.shopify import graphql_query, raise_for_user_errors
+from app.shop.graphql_queries import product_set as product_set_mutation
 from app.shop.inventory import sku_available
 from app.integrations.gsheets import get_sheet_as_dataframe
+from app.shop.utils import get_estado, get_pueblo
 
 def get_captura() -> pd.DataFrame:
     '''Returns Captura worksheet with standardized column names'''
@@ -186,7 +190,8 @@ def validate_fecha_compra(df) -> pd.DataFrame:
     - If empty, it substitutes for 1st of current month yyyy-mm-01
     '''
     today = datetime.today()
-    two_months_ago = today - timedelta(days=60)
+    MONTHS_FOR_WARNING = 2
+    n_months_ago = today - timedelta(days=(30*MONTHS_FOR_WARNING))
 
     for index, row in df.iterrows():
         fecha_compra = row['dateOfPurchase']
@@ -197,14 +202,15 @@ def validate_fecha_compra(df) -> pd.DataFrame:
             continue
         
         try:
-            fecha_compra = pd.to_datetime(fecha_compra) # TODO: find a way to  verify that google sheets is sending the day/month/year. Because it depends on the 'locale' settings in the worksheet and sometimes the worksheet defaults to US locale where month goes first.
+            fecha_compra = pd.to_datetime(fecha_compra) 
+            # TODO: find a way to  verify that google sheets is sending the day/month/year. Because it depends on the 'locale' settings in the worksheet and sometimes the worksheet defaults to US locale where month goes first.
         except Exception:
             add_error(df, df.index == index, "fecha inválida")
             continue
         
         if pd.notna(fecha_compra):
-            if fecha_compra < two_months_ago:
-                add_warning(df, df.index == index, "La fecha debe ser de los últimos 6 meses")
+            if fecha_compra < n_months_ago:
+                add_warning(df, df.index == index, f"La fecha debe ser de los últimos {MONTHS_FOR_WARNING} meses")
 
             df.at[index, 'dateOfPurchase'] = fecha_compra.strftime('%Y-%m-%d')
     
@@ -227,3 +233,102 @@ def validate_quantity(df) -> pd.DataFrame:
     
     return df
 
+def add_product_handles(df: pd.DataFrame) -> pd.DataFrame:
+    last_handle = Metadata.get_last_product_handle()
+
+    handle_parts = last_handle.split('-')
+    last_num = int(handle_parts[-1])
+    new_handles = ['-'.join(handle_parts[:-1]) + f'-{last_num + i + 1}' for i in range(len(df))]
+    df['handle'] = new_handles
+
+    return df
+
+def add_cost_histories(df:pd.DataFrame) -> pd.DataFrame:
+    df['costHistory'] = pd.NA
+    for _, row in df.iterrows():
+        new_cost_history_value = [{
+            "costo": row['cost'],
+            "cantidad": row['quantityDelta'],
+            "fecha de compra": row['dateOfPurchase'],
+        }]
+        new_cost_history = {
+            "key": "cost_history",
+            "namespace": "custom",
+            "value": json.dumps(new_cost_history_value)
+        }
+        df['costHistory'] = json.dumps(new_cost_history)
+    
+    return df
+
+def upload_to_shopify(df: pd.DataFrame) -> list[str] | None:
+    '''
+    Sets the unitCost for a product variant.
+
+    Params:
+    - df: the products we will upload
+
+    Returns:
+    - list of rows that had errors separated by commas. Each error contains row 
+    and sku
+    e.g. 'row 3 with sku SOME_SKU_21,row 7 with sku OTHER_SKU_14'
+    '''
+    query = product_set_mutation
+
+    for _, row in df.iterrows():
+        vendor = row['vendor']
+
+        variables = {
+            "input": {
+                "title": row['title'],
+                "vendor": vendor,
+                "handle": row['handle'],
+                "metafields": [
+                    {
+                        "namespace": "custom", 
+                        "key": "estado", 
+                        "value": get_estado(vendor)
+                    },
+                    {
+                        "namespace": "custom",
+                        "key": "pueblo",
+                        "value": get_pueblo(vendor)
+                    }
+                ],
+                "productOptions": [
+                    {
+                        "name": "Title",
+                        "values": [
+                            {"name": "Default Title"}
+                        ]
+                    }
+                ],
+                "variants": [
+                    {
+                        "price": row['price'],
+                        "inventoryPolicy": "CONTINUE",
+                        "inventoryItem": {
+                            "sku": row['sku'],
+                            "cost": row['cost'],
+                            "tracked": True
+                        },
+                        "inventoryQuantities": [
+                            {
+                                "locationId": current_app.config['SHOPIFY_LOCATION_ID'],
+                                "name": "available",
+                                "quantity": 50
+                            }
+                        ],
+                        "optionValues": [
+                            {
+                                "optionName": "Title",
+                                "name": "Default Title"
+                            }
+                        ],
+                        "metafields": [json.loads(row['costHistory'])]
+                    }
+                ]
+            }
+        }
+
+        res = graphql_query(query=query, variables=variables)
+        raise_for_user_errors(res, 'productSet')

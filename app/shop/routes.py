@@ -5,14 +5,15 @@ from flask import redirect, url_for, request, flash, render_template, send_file,
 from flask_login import login_required, current_user
 import sqlalchemy as sa
 from app import db
-from app.models import AdminAction, Vendor
+from app.models import AdminAction, Vendor, File, Metadata
 from app.shop import bp
 from app.shop.forms import SubmitForm, QueryProductsForm
 from app.shop.price_tags import generate_pdf
 from app.integrations.sheety import clear_inventory_updates_sheet, fetch_etiquetas, fetch_inventory_updates
+from app.integrations.gsheets import append_df_to_sheet, clear_sheet_except_header
 from app.shop.inventory import get_local_inventory, delete_local_inventory, write_local_inventory, complete_sheety_data,\
     adjust_variant_quantities, set_variant_price, set_variant_cost, set_metafields, get_variants_using_query
-from app.shop.captura import get_captura, captura_clenup_and_validation
+from app.shop.captura import get_captura, captura_clenup_and_validation, add_product_handles, upload_to_shopify, add_cost_histories
 
 @bp.route('/generar-pdf-etiquetas')
 @login_required
@@ -84,8 +85,9 @@ def start_upload_product_quantities():
                                 process_description='Actualizando Inventario...', 
                                 process_view='shop.upload_product_quantities',
                                 final_view='shop.update_product_quantities'))
-    
-@bp.route('/subir-cantidades-shopify')
+
+# HERE
+@bp.route('/shopify-subir-cantidades')
 @login_required
 def upload_product_quantities():
     # TODO: view is dirty but working... needs a lot of refactoring
@@ -188,32 +190,107 @@ def upload_product_quantities():
 
 @bp.route('/captura', methods=['GET', 'POST'])
 @login_required
-def captura():
+def review_new_products():
     refresh_form, upload_form = SubmitForm(), SubmitForm()
     refresh_form.submit.label.text = 'Actualizar desde Google Sheets'
     upload_form.submit.label.text = 'Subir a Shopify'
 
     if request.method == 'GET':
         df = get_captura() # TODO make async
+    
         column_list = ['rowNum', 'vendor', 'title', 'sku', 'cost', 'price', 'quantityDelta', 'dateOfPurchase']
+
+        if df.shape[0] == 0:
+            return render_template('shop/captura.html', title='Captura', 
+                                   refresh_form=refresh_form, column_list=column_list)
 
         products = captura_clenup_and_validation(df)
         total_warnings = products['warnings'].count()
         total_errors = products['errors'].count()
-        products = products.to_dict(orient='records')
+        products_dict = products.to_dict(orient='records')
         
         return render_template('shop/captura.html', title='Captura', 
                                refresh_form=refresh_form, upload_form=upload_form,
-                               products=products, column_list=column_list, 
+                               products=products_dict, column_list=column_list, 
                                errors=total_errors, warnings=total_warnings)
     
     if refresh_form.validate_on_submit():
-        return redirect(url_for('shop.captura'))
+        print('refresh clicked')
+        return redirect(url_for('shop.review_new_products'))
 
-@bp.route('/proceso-subir-captura')
+@bp.route('/proceso-subir-captura', methods=['POST'])
 @login_required
 def start_upload_new_products():
-    return 'Not yet implemented...'
+    form = SubmitForm()
+
+    if form.validate_on_submit():
+        return redirect(url_for('dashboard.loading', 
+                                process_description='Publicando productos...', 
+                                process_view='shop.upload_new_products',
+                                final_view='shop.review_new_products'))
+
+# HERE
+@bp.route('/shopify-publicar-productos')
+@login_required
+def upload_new_products():
+    df = get_captura()
+    products = captura_clenup_and_validation(df)
+    total_errors = products['errors'].count()
+    total_warnings = products['warnings'].count()
+
+    flash('Why is this flashed message not flashing?')
+
+    # check for errors and warnings
+    if total_errors:
+        flash('No es posible subir cantidades mientras aún hay errores. Porfavor revisa los reglones marcadoes en rojo.', 'error')
+        return redirect(url_for('shop.update_product_quantities'))
+    
+    if total_warnings and not current_user.is_superadmin:
+        flash('Si los productos tienen advertencias (renglones en amarillo), solo un admisnitrador los puede subir.')
+        return redirect(url_for('shop.update_product_quantities'))
+    
+    # create the AdminAction
+    publish_products_action = AdminAction(action="Publicar Productos", status='En proceso...', admin=current_user)
+    db.session.add(publish_products_action)
+    db.session.commit()
+
+    # add files to the AdminAction
+    raw_csv_path = 'data/captura/raw_products.csv'
+    df.to_csv(raw_csv_path)
+    raw_csv_file = File(path=raw_csv_path, admin_action=publish_products_action)
+    db.session.add(raw_csv_file)
+    db.session.commit()
+
+    # Add product handle and cost history
+    if 'handle' not in products:
+        products = add_product_handles(products)
+    else:
+        current_app.logger.error('Cannot add automatic handles with add_product_handles() if custom handles have been entered.')
+        raise ValueError('handle column not allowed')
+
+    products = add_cost_histories(products)
+
+    # add files to the AdminAction
+    processed_csv_path = 'data/captura/processed_products.csv'
+    products.to_csv(processed_csv_path)
+    processed_csv_file = File(path=processed_csv_path, admin_action=publish_products_action)
+    db.session.add(processed_csv_file)
+    db.session.commit()
+
+    try:
+        upload_to_shopify(products)
+    except:
+        raise
+    else:
+        Metadata.set_last_product_handle(products.iloc[-1]['handle'])
+
+        captura_id = current_app.config['GSHEETS_CAPTURA_ID']
+        credentials = current_app.config['GSHEETS_CREDENTIALS']
+        append_df_to_sheet(captura_id, 'Historial', credentials, products)
+        clear_sheet_except_header(captura_id, 'Captura', credentials)
+
+    return 'Process Finished'
+
 
 @bp.route('/etiquetas')
 def etiquetas():    
