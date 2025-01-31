@@ -82,3 +82,26 @@ class Metadata(db.Model):
 
     def __repr__(self):
         return f'<Metadata {self.key}: {self.value}>'
+    
+    @classmethod
+    def get_last_product_handle(cls) -> str:
+        '''
+        Return the value of the key 'products_last_handle'. If the key does not 
+        exist, sets it to 'default-handle-0' and returns that.
+        '''
+        metadata = db.session.get(cls, 'products_last_handle')
+        if metadata is None:
+            metadata = cls(key='products_last_handle', value='default-handle-0')
+            db.session.add(metadata)
+            db.session.commit()
+        return metadata.value
+
+    @classmethod
+    def set_last_product_handle(cls, handle: str) -> None:
+        metadata = db.session.get(cls, 'products_last_handle')
+        if metadata is None:
+            metadata = cls(key='products_last_handle', value=handle)
+            db.session.add(metadata)
+        else:
+            metadata.value = handle
+        db.session.commit()
