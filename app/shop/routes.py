@@ -16,7 +16,7 @@ from app.shop.inventory import get_local_inventory, delete_local_inventory, writ
     adjust_variant_quantities, set_variant_price, set_variant_cost, set_metafields, get_variants_using_query
 from app.shop.captura import get_captura, captura_clenup_and_validation, add_product_handles, upload_to_shopify, add_cost_histories
 
-@bp.route('/generar-pdf-etiquetas')
+@bp.route('/etiquetas-generar-pdf')
 @login_required
 def generate_labels():
     try:
@@ -36,7 +36,90 @@ def generate_labels():
         flash('Failed to generate labels. Please try again.', 'danger')
         return redirect(url_for('dashboard.index'))
 
-@bp.route('/actualizar_cantidades', methods=['GET', 'POST'])
+@bp.route('/etiquetas')
+def etiquetas():    
+    return render_template('shop/price_tags.html', title='Etiquetas')
+
+@bp.route('/productos', methods=['GET', 'POST'])
+@login_required
+def products():
+    form = QueryProductsForm()
+
+    if form.validate_on_submit():
+        state = f"metafields.custom.estado:'{form.state.data}'" if form.state.data else ''
+        town = f"metafields.custom.pueblo:'{form.town.data}'" if form.town.data else ''
+        vendor = f"vendor:'{form.vendor.data}'" if form.vendor.data else ''
+
+        filters = [field for field in [state, town, vendor] if field]
+
+        if not filters:
+            flash('No seleccionaste ningún filtro.', 'warning')
+            return redirect(url_for('shop.products'))
+        
+        query = ' AND '.join(filters)
+        print(f'{query = }')
+
+        return redirect(url_for('shop.query_products', query=query))
+
+    return render_template('shop/products_search.html', form=form)
+
+@bp.route('/productos-busqueda', methods=['GET', 'POST'])
+@login_required
+def query_products():
+    query = request.args.get('query')
+    print(query)
+    if not query:
+        flash('Something went wrong.', 'error')
+        current_app.logger.error('No query was entered.')
+        return redirect(url_for('dashboard.index'))
+    
+    nodes, cursor = get_variants_using_query(query)
+
+    # if cursor: # TODO along with the to-do inget_variants_using_query()
+        # show next page button
+    prods = []
+    for node in nodes:
+        metafields = {meta['key']: meta['value'] for meta in node['metafields']['nodes']}
+        prod = {
+            'vendor': node['vendor'],
+            'title': node['title'],
+            'pueblo': metafields.get('custom.pueblo'),
+            'estado': metafields.get('custom.estado'),
+            'variants': [{
+                'variantTitle': variant['title'],
+                'cost': variant['inventoryItem']['unitCost']['amount'],
+                'costHistory': variant['metafield'] if variant['metafield'] else None,
+                'price': variant['price'],
+                'sku': variant['sku'],
+                'quantity': variant['inventoryItem']['inventoryLevel']['quantities'][0]['quantity'],
+            } for variant in node['variants']['nodes']],
+        }
+        prods.append(prod)
+
+    
+    return render_template('shop/products_results.html', products=prods)
+
+@bp.route('/artesanos')
+@login_required
+def vendors():
+    page = request.args.get('page', 1, int)
+    query = sa.select(Vendor).order_by(Vendor.name)
+
+    vendors = db.paginate(query, page=page, 
+                        per_page=current_app.config.get('VENDORS_PER_PAGE', 50), 
+                        error_out=False)
+    pagination = {
+        'page': page,
+        'next_url': url_for('shop.vendors', page=vendors.next_num) \
+            if vendors.has_next else None,
+        'prev_url': url_for('shop.vendors', page=vendors.prev_num) \
+            if vendors.has_prev else None,
+    }
+
+    return render_template('shop/vendors.html', vendors=vendors, pagination=pagination)
+
+# --------------------------- ACTUALIZAR CANTIDADES --------------------------- #
+@bp.route('/cantidades', methods=['GET', 'POST'])
 @login_required
 def update_product_quantities():
     refresh_form, confirm_form = SubmitForm(), SubmitForm()
@@ -76,7 +159,7 @@ def update_product_quantities():
 
         return redirect(url_for('shop.update_product_quantities'))
     
-@bp.route('/proceso-subir-cantidades', methods=['POST'])
+@bp.route('/cantidades-cargando', methods=['POST'])
 @login_required
 def start_upload_product_quantities():
     form = SubmitForm()
@@ -87,7 +170,7 @@ def start_upload_product_quantities():
                                 process_view='shop.upload_product_quantities',
                                 final_view='shop.update_product_quantities'))
 
-@bp.route('/shopify-subir-cantidades')
+@bp.route('/cantidades-subir')
 @login_required
 def upload_product_quantities():
     # TODO: view is dirty but working... needs a lot of refactoring
@@ -220,6 +303,7 @@ def upload_product_quantities():
 
     return messages
 
+# ---------------------------------- CAPTURA ---------------------------------- #
 @bp.route('/captura', methods=['GET', 'POST'])
 @login_required
 def review_new_products():
@@ -250,7 +334,7 @@ def review_new_products():
         print('refresh clicked')
         return redirect(url_for('shop.review_new_products'))
 
-@bp.route('/proceso-subir-captura', methods=['POST'])
+@bp.route('/captura-cargando', methods=['POST'])
 @login_required
 def start_upload_new_products():
     form = SubmitForm()
@@ -261,7 +345,7 @@ def start_upload_new_products():
                                 process_view='shop.upload_new_products',
                                 final_view='shop.review_new_products'))
 
-@bp.route('/shopify-publicar-productos')
+@bp.route('/captura-proceso')
 @login_required
 def upload_new_products():
     df = get_captura()
@@ -340,85 +424,3 @@ def upload_new_products():
         db.session.commit()
 
     return messages
-
-@bp.route('/etiquetas')
-def etiquetas():    
-    return render_template('shop/price_tags.html', title='Etiquetas')
-
-@bp.route('/productos', methods=['GET', 'POST'])
-@login_required
-def products():
-    form = QueryProductsForm()
-
-    if form.validate_on_submit():
-        state = f"metafields.custom.estado:'{form.state.data}'" if form.state.data else ''
-        town = f"metafields.custom.pueblo:'{form.town.data}'" if form.town.data else ''
-        vendor = f"vendor:'{form.vendor.data}'" if form.vendor.data else ''
-
-        filters = [field for field in [state, town, vendor] if field]
-
-        if not filters:
-            flash('No seleccionaste ningún filtro.', 'warning')
-            return redirect(url_for('shop.products'))
-        
-        query = ' AND '.join(filters)
-        print(f'{query = }')
-
-        return redirect(url_for('shop.query_products', query=query))
-
-    return render_template('shop/products_search.html', form=form)
-
-@bp.route('/query_products', methods=['GET', 'POST'])
-@login_required
-def query_products():
-    query = request.args.get('query')
-    print(query)
-    if not query:
-        flash('Something went wrong.', 'error')
-        current_app.logger.error('No query was entered.')
-        return redirect(url_for('dashboard.index'))
-    
-    nodes, cursor = get_variants_using_query(query)
-
-    # if cursor: # TODO along with the to-do inget_variants_using_query()
-        # show next page button
-    prods = []
-    for node in nodes:
-        metafields = {meta['key']: meta['value'] for meta in node['metafields']['nodes']}
-        prod = {
-            'vendor': node['vendor'],
-            'title': node['title'],
-            'pueblo': metafields.get('custom.pueblo'),
-            'estado': metafields.get('custom.estado'),
-            'variants': [{
-                'variantTitle': variant['title'],
-                'cost': variant['inventoryItem']['unitCost']['amount'],
-                'costHistory': variant['metafield'] if variant['metafield'] else None,
-                'price': variant['price'],
-                'sku': variant['sku'],
-                'quantity': variant['inventoryItem']['inventoryLevel']['quantities'][0]['quantity'],
-            } for variant in node['variants']['nodes']],
-        }
-        prods.append(prod)
-
-    
-    return render_template('shop/products_results.html', products=prods)
-
-@bp.route('/artesanos')
-@login_required
-def vendors():
-    page = request.args.get('page', 1, int)
-    query = sa.select(Vendor).order_by(Vendor.name)
-
-    vendors = db.paginate(query, page=page, 
-                        per_page=current_app.config.get('VENDORS_PER_PAGE', 50), 
-                        error_out=False)
-    pagination = {
-        'page': page,
-        'next_url': url_for('shop.vendors', page=vendors.next_num) \
-            if vendors.has_next else None,
-        'prev_url': url_for('shop.vendors', page=vendors.prev_num) \
-            if vendors.has_prev else None,
-    }
-
-    return render_template('shop/vendors.html', vendors=vendors, pagination=pagination)
