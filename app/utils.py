@@ -68,7 +68,7 @@ def validate_spanish_characters(string: str) -> bool:
     if not isinstance(string, str):
         raise TypeError("Expected a string.")
 
-    valid_chars = r"^[a-zA-ZáéíóúÁÉÍÓÚñÑ/\s.,;¡!¿?()\"'-]*$"
+    valid_chars = r"^[0-9a-zA-ZáéíóúÁÉÍÓÚñÑ/\s.,;¡!¿?()\"'-]*$"
     
     return re.fullmatch(valid_chars, string) is not None
 
