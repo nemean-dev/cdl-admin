@@ -2,6 +2,8 @@ import re
 from datetime import datetime, timezone
 from unidecode import unidecode
 
+# TODO: move many of these functions to app/shop/utils.py
+
 def extended_compare(str1: str, str2: str) -> bool:
     '''
     If strings are similar, returns True.
@@ -72,3 +74,5 @@ def validate_spanish_characters(string: str) -> bool:
     
     return re.fullmatch(valid_chars, string) is not None
 
+def get_timestamp() -> float:
+    return datetime.now(timezone.utc).timestamp()

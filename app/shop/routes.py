@@ -6,6 +6,7 @@ from flask_login import login_required, current_user
 import sqlalchemy as sa
 from app import db
 from app.models import AdminAction, Vendor, File, Metadata
+from app.utils import get_timestamp
 from app.shop import bp
 from app.shop.forms import SubmitForm, QueryProductsForm
 from app.shop.price_tags import generate_pdf
@@ -86,7 +87,6 @@ def start_upload_product_quantities():
                                 process_view='shop.upload_product_quantities',
                                 final_view='shop.update_product_quantities'))
 
-# HERE
 @bp.route('/shopify-subir-cantidades')
 @login_required
 def upload_product_quantities():
@@ -229,7 +229,6 @@ def start_upload_new_products():
                                 process_view='shop.upload_new_products',
                                 final_view='shop.review_new_products'))
 
-# HERE
 @bp.route('/shopify-publicar-productos')
 @login_required
 def upload_new_products():
@@ -254,8 +253,10 @@ def upload_new_products():
     db.session.add(publish_products_action)
     db.session.commit()
 
+    timestamp = int(get_timestamp())
+
     # add files to the AdminAction
-    raw_csv_path = 'data/captura/raw_products.csv'
+    raw_csv_path = f'data/captura/raw_products{timestamp}.csv'
     df.to_csv(raw_csv_path)
     raw_csv_file = File(path=raw_csv_path, admin_action=publish_products_action)
     db.session.add(raw_csv_file)
@@ -271,7 +272,7 @@ def upload_new_products():
     products = add_cost_histories(products)
 
     # add files to the AdminAction
-    processed_csv_path = 'data/captura/processed_products.csv'
+    processed_csv_path = f'data/captura/processed_products{timestamp}.csv'
     products.to_csv(processed_csv_path)
     processed_csv_file = File(path=processed_csv_path, admin_action=publish_products_action)
     db.session.add(processed_csv_file)
@@ -288,9 +289,11 @@ def upload_new_products():
         credentials = current_app.config['GSHEETS_CREDENTIALS']
         append_df_to_sheet(captura_id, 'Historial', credentials, products)
         clear_sheet_except_header(captura_id, 'Captura', credentials)
+        publish_products_action.status = "Completado"
+        db.session.add(publish_products_action)
+        db.session.commit()
 
     return 'Process Finished'
-
 
 @bp.route('/etiquetas')
 def etiquetas():    
