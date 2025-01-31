@@ -123,17 +123,31 @@ This function does not support errors
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-              {% if prod['info'] %}
-                <strong>Info:</strong>
-                <p>{{ prod['info'] }}</p>
-              {% endif %}
-              {% if prod['warnings'] %}
-                <strong class="text-warning">Advertencias:</strong>
-                <p class="text-warning">{{ prod['warnings'] }}</p>
-              {% endif %}
               {% if prod['errors'] %}
                 <strong class="text-danger">Errores:</strong>
-                <p class="text-danger">{{ prod['errors'] }}</p>
+                <ul class="text-danger">
+                  {% for message in prod['errors'].split(';') %}
+                    <li>{{ message }}</li>
+                  {% endfor %}
+                </ul>
+              {% endif %}
+              
+              {% if prod['warnings'] %}
+                <strong class="text-warning">Advertencias:</strong>
+                <ul>
+                  {% for message in prod['warnings'].split(';') %}
+                    <li>{{ message }}</li>
+                  {% endfor %}
+                </ul>
+              {% endif %}
+              
+              {% if prod['info'] %}
+                <strong>Info:</strong>
+                <ul>
+                  {% for message in prod['info'].split(';') %}
+                    <li>{{ message }}</li>
+                  {% endfor %}
+                </ul>
               {% endif %}
             </div>
             <div class="modal-footer">

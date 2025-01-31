@@ -41,6 +41,7 @@ def captura_clenup_and_validation(captura: pd.DataFrame) -> list[dict]:
     '''
     df = captura.copy()
 
+    df['info'] = pd.NA
     df['warnings'] = pd.NA
     df['errors'] = pd.NA
 
@@ -65,6 +66,12 @@ def add_error(df: pd.DataFrame, row_filter, message: str) -> None:
         lambda x: f"{x}; {message}" if pd.notna(x) else message
     )
 
+def add_info(df: pd.DataFrame, row_filter, message: str) -> None:
+    """Appends an info message to the 'info' column for rows matching row_filter."""
+    df.loc[row_filter, 'info'] = df.loc[row_filter, 'info'].apply(
+        lambda x: f"{x}; {message}" if pd.notna(x) else message
+    )
+
 def validate_vendors(df) -> pd.DataFrame:
     '''
     - Matches with vendor db regardless of capitalization, accentuation, or multiple 
@@ -86,7 +93,7 @@ def validate_vendors(df) -> pd.DataFrame:
                 #update the df for the correct name
                 df.loc[row_filter, 'vendor'] = vendor_in_db.name
                 #add warning that row changed #TODO: keep this?
-                add_warning(df, row_filter, f"Artesano remombrado de '{vendor_name}' a '{vendor_in_db.name}'")
+                add_info(df, row_filter, f"Artesano remombrado de '{vendor_name}' a '{vendor_in_db.name}'")
 
         else:
             # Add an error if no matching vendor was found in the database
