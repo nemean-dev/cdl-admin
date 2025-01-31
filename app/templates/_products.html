@@ -160,7 +160,7 @@ This function does not support errors
 
     {% else %}
       <tr>
-        <td colspan="columns|length" class="text-center">No hay datos disponibles</td>
+        <td colspan="{{ columns|length }}" class="text-center">No hay datos disponibles.</td>
       </tr>
     {% endif %}
   </tbody>
@@ -222,7 +222,7 @@ This function does not support errors
     {% endfor %}
     {% else %}
     <tr>
-      <td colspan="6" class="text-center">No hay datos disponibles</td>
+      <td colspan="{{ product_fields|length + variant_fields|length }}" class="text-center">No hay datos disponibles</td>
     </tr>
     {% endif %}
   </tbody>
