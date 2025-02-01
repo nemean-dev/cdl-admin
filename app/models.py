@@ -78,6 +78,24 @@ class Vendor(db.Model):
             raise ValueError('Multiline strings not allowed as Vendor names.')
         self.name = name
         self.compare_name = simple_lower_ascii(name) #lowered, no accents, and no multiple consecutive whitespace characters
+    
+    def set_pueblo(self, pueblo):
+        if is_multiline(pueblo):
+            raise ValueError('Multiline strings not allowed as Vendor names.')
+        if not self.name:
+            raise ValueError('You must set the vendor name before pueblo or estado.')
+        if self.compare_name in ['anonimo', 'x']:
+            return
+        self.pueblo = pueblo
+
+    def set_estado(self, estado):
+        if is_multiline(estado):
+            raise ValueError('Multiline strings not allowed as Vendor names.')
+        if not self.name:
+            raise ValueError('You must set the vendor name before pueblo or estado.')
+        if self.compare_name in ['anonimo', 'x']:
+            return
+        self.estado = estado
 
 class Metadata(db.Model):
     key: orm.Mapped[str] = orm.mapped_column(sa.String(128), primary_key=True)

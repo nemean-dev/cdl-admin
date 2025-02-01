@@ -128,7 +128,7 @@ def vendors_df(path: str = None) -> pd.DataFrame:
             vendors[vendor]['towns'].add((pueblo, estado))
     
     for name, details in vendors.items():
-        details['name'] = name
+        details['vendor'] = name
 
     df = pd.DataFrame(vendors.values())
     df['towns'] = df['towns'].apply(list)
