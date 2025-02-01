@@ -1,3 +1,4 @@
+import sys
 import click
 import pandas as pd
 import sqlalchemy as sa
@@ -11,8 +12,19 @@ bp = Blueprint('cli', __name__)
 @bp.cli.command('add-vendors')
 @click.argument('csv_path')
 def add_vendors(csv_path):
-    '''Load vendors from a CSV file into the db'''
+    '''
+    Load vendors from a CSV file into the db. CSV should contain a 'Vendor' or 
+    'vendor' column
+    '''
     df = pd.read_csv(csv_path)
+
+    if 'vendor' in df.columns:
+        col_name = 'vendor'
+    elif 'Vendor' in df.columns:
+        col_name = 'Vendor'
+    else:
+        click.echo("Error: CSV does not contain a 'vendor' or 'Vendor' column.")
+        sys.exit(2)
 
     # Remove rows if vendor is nan/empty
     df = df.dropna(subset=['Vendor'])
