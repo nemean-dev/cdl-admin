@@ -1,3 +1,7 @@
+<!-- Requires:
+ - actions
+ - pagination
+  -->
 {% extends "base.html" %}
 {% import "dashboard/_actions.html" as acts %}
 
@@ -5,6 +9,6 @@
 
 <h2>Historial de acciones</h2>
 
-{{ acts.action_table(actions) }}
+{{ acts.action_table(actions, pagination) }}
 
 {% endblock %}

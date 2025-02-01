@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from flask import render_template, abort, flash, redirect, url_for, request
+from flask import render_template, abort, flash, redirect, url_for, request, current_app
 from flask_login import login_required, current_user
 import sqlalchemy as sa
 from app import db
@@ -24,19 +24,42 @@ def index():
 @bp.route('/action-log')
 @login_required
 def action_log():
-    actions = db.session.scalars(sa.select(AdminAction)).all()
-    return render_template('dashboard/action_log.html', actions=actions) #TODO add pagination here and in the user profiles
+    page = request.args.get('page', 1, int)
+    query = sa.select(AdminAction).order_by(AdminAction.timestamp.desc())
+    actions = db.paginate(query, page=page, error_out=False, 
+                          per_page=current_app.config['ADMIN_ACTIONS_PER_PAGE'])
+    
+    pagination = {
+        'page': page,
+        'next_url': url_for('dashboard.action_log',
+                            page=actions.next_num) if actions.has_next else None,
+        'prev_url': url_for('dashboard.action_log', 
+                            page=actions.prev_num) if actions.has_prev else None,
+    }
+
+    return render_template('dashboard/action_log.html', actions=actions.items, 
+                           pagination=pagination)
 
 @bp.route('/user/<id>')
 @login_required
 def user(id):
-    user = db.session.get(User, id)
-    if user is None:
-        abort(404)
+    user = db.first_or_404(sa.select(User).where(User.id == id))
 
-    actions = db.session.scalars(sa.select(AdminAction).where(AdminAction.admin == user))
+    page = request.args.get('page', 1, int)
+    query = sa.select(AdminAction).where(AdminAction.admin == user).order_by(AdminAction.timestamp.desc())
+    actions = db.paginate(query, page=page, error_out=False, 
+                          per_page=current_app.config['ADMIN_ACTIONS_PER_PAGE'])
+    
+    pagination = {
+        'page': page,
+        'next_url': url_for('dashboard.user', id=user.id,
+                            page=actions.next_num) if actions.has_next else None,
+        'prev_url': url_for('dashboard.user', id=user.id, 
+                            page=actions.prev_num) if actions.has_prev else None,
+    }
 
-    return render_template('dashboard/user.html', user=user, actions=actions)
+    return render_template('dashboard/user.html', user=user, 
+                           actions=actions.items, pagination=pagination)
 
 @bp.route('/settings', methods=['GET', 'POST'])
 @login_required

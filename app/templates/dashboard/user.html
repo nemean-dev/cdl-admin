@@ -14,5 +14,5 @@
   {% endif %}
   <hr>
   <h2>Acciones</h2>
-  {{ acts.action_table(actions) }}
+  {{ acts.action_table(actions, pagination, include_users=False) }}
 {% endblock %}
