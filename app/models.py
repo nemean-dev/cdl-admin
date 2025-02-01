@@ -66,6 +66,9 @@ class Vendor(db.Model):
                                              unique=True)
     compare_name: orm.Mapped[str] = orm.mapped_column(sa.String(256), index=True,
                                                       unique=True)
+    pueblo: orm.Mapped[Optional[str]] = orm.mapped_column(sa.String(128), index=True)
+    estado: orm.Mapped[Optional[str]] = orm.mapped_column(sa.String(16), index=True)
+    pueblos_estados_shopify: orm.Mapped[Optional[str]] = orm.mapped_column(sa.String())
     
     def __repr__(self):
         return '<Vendor {}>'.format(self.name)
