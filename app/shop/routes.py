@@ -162,6 +162,10 @@ def update_product_quantities():
 @bp.route('/cantidades-cargando', methods=['POST'])
 @login_required
 def start_upload_product_quantities():
+    if not current_user.is_superadmin:
+        flash("Tu usuario no tiene los permisos necesarios para realizar esta acción.", 'warning')
+        return redirect(url_for('shop.update_product_quantities'))
+    
     form = SubmitForm()
 
     if form.validate_on_submit():
@@ -172,7 +176,7 @@ def start_upload_product_quantities():
 
 @bp.route('/cantidades-subir')
 @login_required
-def upload_product_quantities():
+def upload_product_quantities():    
     # TODO: view is dirty but working... needs a lot of refactoring
     messages = []
 
@@ -187,7 +191,7 @@ def upload_product_quantities():
     if not current_user.is_superadmin:
         messages.append({
             'message': 'Tu usuario no tiene los permisos necesarios para realizar esta acción.', 
-            'category': 'error' 
+            'category': 'warning' 
         })
         return messages
 
@@ -311,7 +315,7 @@ def review_new_products():
     refresh_form.submit.label.text = 'Actualizar desde Google Sheets'
     upload_form.submit.label.text = 'Subir a Shopify'
 
-    if request.method == 'GET':
+    if request.method == 'GET': #only refresh form tagets this endpoint
         df = get_captura() # TODO make async
     
         column_list = ['rowNum', 'vendor', 'title', 'sku', 'cost', 'price', 'quantityDelta', 'dateOfPurchase']
@@ -337,6 +341,10 @@ def review_new_products():
 @bp.route('/captura-cargando', methods=['POST'])
 @login_required
 def start_upload_new_products():
+    if not current_user.is_superadmin:
+        flash("Tu usuario no tiene los permisos necesarios para realizar esta acción.", 'warning')
+        return redirect(url_for('shop.review_new_products'))
+    
     form = SubmitForm()
 
     if form.validate_on_submit():
@@ -348,6 +356,10 @@ def start_upload_new_products():
 @bp.route('/captura-proceso')
 @login_required
 def upload_new_products():
+    if not current_user.is_superadmin:
+        flash("Tu usuario no tiene los permisos necesarios para realizar esta acción.", 'warning')
+        return redirect(url_for('shop.review_new_products'))
+    
     df = get_captura()
     products = captura_clenup_and_validation(df)
     total_errors = products['errors'].count()
