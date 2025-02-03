@@ -7,6 +7,8 @@ import sqlalchemy.orm as orm
 from app import db, login
 from app.utils import simple_lower_ascii, is_multiline
 
+MIN_PASSWORD_LENGTH = 8
+
 @login.user_loader
 def load_user(id):
     return db.session.get(User, int(id))
@@ -28,6 +30,8 @@ class User(UserMixin, db.Model):
         return '<User {}>'.format(self.email)
     
     def set_password(self, password):
+        if len(password) < MIN_PASSWORD_LENGTH:
+            raise ValueError(f"Password must be at least {MIN_PASSWORD_LENGTH} characters long")
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):

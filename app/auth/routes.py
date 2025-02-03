@@ -1,3 +1,4 @@
+from time import sleep
 from urllib.parse import urlsplit
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import current_user, login_required, login_user, logout_user
@@ -28,6 +29,7 @@ def login():
             return redirect(next_page)
         
         else:
+            sleep(2)
             flash('Email o contraseña incorrectos')
             return redirect(url_for('auth.login'))
     
