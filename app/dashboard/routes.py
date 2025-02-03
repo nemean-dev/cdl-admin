@@ -61,6 +61,25 @@ def user(id):
     return render_template('dashboard/user.html', user=user, 
                            actions=actions.items, pagination=pagination)
 
+@bp.route('/users')
+@login_required
+def users():
+    page = request.args.get('page', 1, int)
+    query = sa.select(User).order_by(User.is_superadmin.desc(), User.last_seen.desc())
+    all_users = db.paginate(
+        query, page=page, per_page=current_app.config['ADMIN_ACTIONS_PER_PAGE'])
+
+    pagination = {
+        'page': page,
+        'next_url': url_for('dashboard.user', id=user.id,
+                            page=all_users.next_num) if all_users.has_next else None,
+        'prev_url': url_for('dashboard.user', id=user.id, 
+                            page=all_users.prev_num) if all_users.has_prev else None,
+    }
+    
+    return render_template('dashboard/users.html', users=all_users, 
+                           pagination=pagination)
+
 @bp.route('/settings', methods=['GET', 'POST'])
 @login_required
 def user_settings():

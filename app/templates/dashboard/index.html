@@ -10,7 +10,7 @@
 
 <div class="row">
 
-  <div class="col-12 col-lg-4 mb-3" id="captura">
+  <div class="col-6 mb-3" id="captura">
     <h2>Captura</h2>
 
     <div class="list-group">
@@ -20,22 +20,25 @@
     </div>
   </div>
   
-  <div class="col-6 col-lg-4 mb-3" id="administrar">
-    <h2>Administrar</h2>
+  <div class="col-6 mb-3" id="otras acciones">
+    <h2>Otros</h2>
     <div class="list-group">
-      <a href="{{ url_for('auth.register_users') }}" class="list-group-item list-group-item-action">Agregar administradores</a>
+      <a href="{{ url_for('shop.products') }}" class="list-group-item list-group-item-action">Buscar productos</a>
+      <a href="{{ url_for('shop.vendors') }}" class="list-group-item list-group-item-action">Artesanos</a>
+      <a href="#" class="list-group-item list-group-item-action disabled">Reporte de ventas</a>
       <a href="{{ url_for('dashboard.action_log') }}" class="list-group-item list-group-item-action">Ver historial de acciones</a>
     </div>
   </div>
-
-  <div class="col-6 col-lg-4 mb-3" id="otras acciones">
-    <h2>Otros</h2>
+  
+  {% if current_user.is_superadmin %}
+  <div class="col-6 mb-3" id="administrar">
+    <h2>Administrar</h2>
     <div class="list-group">
-      <a href="{{ url_for('shop.products') }}" class="list-group-item list-group-item-action">Productos</a>
-      <a href="{{ url_for('shop.vendors') }}" class="list-group-item list-group-item-action">Artesanos</a>
-      <a href="#" class="list-group-item list-group-item-action disabled">Reporte de ventas</a>
+      <a href="{{ url_for('auth.register_users') }}" class="list-group-item list-group-item-action">Agregar usuarios</a>
+      <a href="{{ url_for('dashboard.users') }}" class="list-group-item list-group-item-action">Lista de usuarios</a>
     </div>
   </div>
+  {% endif %}
 </div>
 
 

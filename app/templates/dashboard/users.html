@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Usuarios</h2>
+
+<ul>
+  {% for user in users %}
+    <li>Correo :{{ user.email }}, admin: {{ 'sí' if user.is_superadmin else 'no' }}, nombre: {{ user.fname }}, apellido: {{ user.lname }}</li>
+  {% endfor %}
+</ul>
+
+
+{% endblock %}
