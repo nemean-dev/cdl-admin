@@ -4,31 +4,31 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 class Config:
     SECRET_KEY = os.getenv('SECRET_KEY') or '421a8124af2a47529272631abf3d0218'
 
-    GSHEETS_CREDENTIALS = os.getenv("GSHEETS_CREDENTIALS", "./gsheets_credentials.json")
+    # integrations
+    GSHEETS_CREDENTIALS = os.getenv("GSHEETS_CREDENTIALS")
     GSHEETS_CAPTURA_ID = os.getenv('GSHEETS_CAPTURA_ID')
 
-    # use real store or testing store?
-    USE_REAL_STORE=int(os.getenv('USE_REAL_STORE'))
-    if USE_REAL_STORE == 1:  #TODO: there's a better way
+    USING_REAL_STORE=int(os.getenv('USE_REAL_STORE')) == 1
+
+    if USING_REAL_STORE:
         SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
             'sqlite:///' + os.path.join(basedir, 'app.db')
+        LOGS_DIR = os.path.join(basedir, 'logs/')
+        DATA_DIR = os.path.join(basedir, 'data/')
         
         SHOPIFY_STORE = os.getenv('SHOPIFY_STORE')
         SHOPIFY_LOCATION_ID = os.getenv('SHOPIFY_LOCATION_ID') 
         SHOPIFY_API_TOKEN = os.getenv('SHOPIFY_API_TOKEN') 
 
-        print(f'\n\n    WARNING: Using real store: {SHOPIFY_STORE} \n\n')
-
     else:
         SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-            'sqlite:///' + os.path.join(basedir, 'app.db')
+            'sqlite:///' + os.path.join(basedir, 'app-test.db')
+        LOGS_DIR = os.path.join(basedir, 'logs-test/')
+        DATA_DIR = os.path.join(basedir, 'data-test/')
         
         SHOPIFY_STORE = os.getenv('TEST_SHOPIFY_STORE')
         SHOPIFY_LOCATION_ID = os.getenv('TEST_SHOPIFY_LOCATION_ID') 
         SHOPIFY_API_TOKEN = os.getenv('TEST_SHOPIFY_API_TOKEN') 
-
-        print(f'Using test store: {SHOPIFY_STORE}')
-        # TODO make another config class for real store and refactor to use flask's current_app
         
     SHEETY_USERNAME=os.getenv('SHEETY_USERNAME')
     SHEETY_BEARER=os.getenv('SHEETY_BEARER')
