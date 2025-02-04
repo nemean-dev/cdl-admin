@@ -20,8 +20,10 @@ class User(UserMixin, db.Model):
     fname: orm.Mapped[Optional[str]] = orm.mapped_column(sa.String(128))
     lname: orm.Mapped[Optional[str]] = orm.mapped_column(sa.String(128))
     password_hash: orm.Mapped[str] = orm.mapped_column(sa.String(256))
-    last_seen: orm.Mapped[Optional[datetime]] = orm.mapped_column(
-        default=lambda: datetime.now(timezone.utc))#TODO delete default and instead add a 'created' field.
+    last_seen: orm.Mapped[Optional[datetime]] = orm.mapped_column()
+    created_at: orm.Mapped[datetime] = orm.mapped_column(
+        default=lambda: datetime.now(timezone.utc)
+    )
     actions: orm.WriteOnlyMapped['AdminAction'] = orm.relationship(
         back_populates='admin')
     is_superadmin: orm.Mapped[bool] = orm.mapped_column(sa.Boolean, default=False)
