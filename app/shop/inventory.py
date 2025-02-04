@@ -8,22 +8,30 @@ from flask import current_app
 import app.shop.graphql_queries as q
 from app.integrations.shopify import graphql_query, raise_for_user_errors
 
-base_path = os.path.join(os.getcwd(), 'data/update_quantities')
-quantities_file_path = os.path.join(base_path, 'quantities.csv')
-timestamp_file_path = os.path.join(base_path, 'timestamp')
+class PathConfig:
+    @property
+    def base_path(self):
+        return os.path.join(current_app.config['DATA_DIR'], 'update_quantities')
+    @property
+    def quantities_file_path(self):
+        return os.path.join(self.base_path, 'quantities.csv')
+    @property
+    def timestamp_file_path(self):
+        return os.path.join(self.base_path, 'timestamp')
 
 def get_local_inventory() -> tuple[pd.DataFrame, str, int]:
     """
     Returns a tuple with: 
-    - the records stored in 'data/update_quantities/quantities.csv'
-    - the time represented by the timestamp stored in 'data/update_quantities/timestamp'
+    - the records stored in '<data_dir>update_quantities/quantities.csv'
+    - the time represented by the timestamp stored in '<data_dir>/update_quantities/timestamp'
     - the number of errors
     
     Both are None if files missing.
     """
+    paths = PathConfig
     try:
-        data = pd.read_csv(quantities_file_path)
-        with open(timestamp_file_path, 'r') as f:
+        data = pd.read_csv(paths.quantities_file_path)
+        with open(paths.timestamp_file_path, 'r') as f:
             saved_time = float(f.read(50))
             time = datetime.fromtimestamp(saved_time, tz=timezone.utc)
         total_errors = data.loc[data['errors'] != 'none', 'errors'].count()
@@ -36,14 +44,16 @@ def get_local_inventory() -> tuple[pd.DataFrame, str, int]:
     return data, time, total_errors
 
 def delete_local_inventory():
-    if os.path.exists(quantities_file_path):
-        os.remove(quantities_file_path)
-    if os.path.exists(timestamp_file_path):
-        os.remove(timestamp_file_path)
+    paths = PathConfig
+    if os.path.exists(paths.quantities_file_path):
+        os.remove(paths.quantities_file_path)
+    if os.path.exists(paths.timestamp_file_path):
+        os.remove(paths.timestamp_file_path)
 
 def write_local_inventory(df: pd.DataFrame):
-    df.to_csv(quantities_file_path)
-    with open(timestamp_file_path, 'w') as f:
+    paths = PathConfig
+    df.to_csv(paths.quantities_file_path)
+    with open(paths.timestamp_file_path, 'w') as f:
         now = datetime.now(timezone.utc)
         f.write(str(now.timestamp()))
 

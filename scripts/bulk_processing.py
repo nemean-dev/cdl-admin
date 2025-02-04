@@ -48,12 +48,14 @@ mutation {
   }
 }
 '''
-
+import os
 import json
 import pandas as pd
+from flask import current_app
 from collections import defaultdict
 
-JSONL_PATH = 'data/bulk_operation.jsonl'
+BASE_PATH = os.path.join(current_app.config['DATA_DIR'], 'bulk')
+JSONL_PATH = os.path.join(BASE_PATH, 'bulk_operation.jsonl')
 
 def products_df(path: str = None) -> pd.DataFrame:
     '''id, title, vendor, total_variants, metafields'''
@@ -139,8 +141,8 @@ def vendors_df(path: str = None) -> pd.DataFrame:
 
 if __name__=='__main__':
     import os
-    os.makedirs('data/bulk', exist_ok=True)
+    os.makedirs(BASE_PATH, exist_ok=True)
 
-    products_df('data/bulk/products.csv')
-    variants_df('data/bulk/variants.csv')
-    vendors_df('data/bulk/vendors.csv')
+    products_df(os.path.join(BASE_PATH, 'products.csv'))
+    variants_df(os.path.join(BASE_PATH, 'variants.csv'))
+    vendors_df(os.path.join(BASE_PATH, 'vendors.csv'))

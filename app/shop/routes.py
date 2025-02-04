@@ -403,14 +403,14 @@ def upload_new_products():
     timestamp = int(get_timestamp())
 
     # add files to the AdminAction
-    raw_csv_path = f'data/captura/raw_products{timestamp}.csv'
+    raw_csv_path = f'{current_app.config['DATA_DIR']}/captura/raw_products{timestamp}.csv'
     df.to_csv(raw_csv_path)
     raw_csv_file = File(path=raw_csv_path, admin_action=publish_products_action)
     db.session.add(raw_csv_file)
     db.session.commit()
 
     # add files to the AdminAction
-    processed_csv_path = f'data/captura/processed_products{timestamp}.csv'
+    processed_csv_path = f'{current_app.config['DATA_DIR']}/captura/processed_products{timestamp}.csv'
     products.to_csv(processed_csv_path)
     processed_csv_file = File(path=processed_csv_path, admin_action=publish_products_action)
     db.session.add(processed_csv_file)
