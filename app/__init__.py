@@ -5,7 +5,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
-from config import Config
+from config import RealStoreConfig, TestStoreConfig
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -13,7 +13,10 @@ login = LoginManager()
 login.login_view = 'auth.login'
 login.login_message = 'Necesitas inciar sesión para acceder a esta página'
 
-def create_app(config_class=Config):
+using_real_store = os.getenv('USE_REAL_STORE', '0') == '1'
+config = RealStoreConfig if using_real_store else TestStoreConfig
+
+def create_app(config_class=config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
@@ -34,15 +37,10 @@ def create_app(config_class=Config):
     app.register_blueprint(errors_bp)
 
     data_dir = app.config['DATA_DIR']
-    logs_dir = app.config['LOGS_DIR']
-
-    if not os.path.exists(data_dir):
-        os.mkdir(data_dir)
-    if not os.path.exists(logs_dir):
-        os.mkdir(logs_dir)
+    os.makedirs(data_dir, exist_ok=True)
 
     # logging and error emailing
-    if app.config['USING_REAL_STORE'] or (not app.debug and not app.testing):
+    if using_real_store or (not app.debug and not app.testing):
         if app.config['MAIL_SERVER']:
             auth = None
             if app.config['MAIL_USERNAME'] or app.config['MAIL_PASSWORD']:
@@ -59,18 +57,24 @@ def create_app(config_class=Config):
             mail_handler.setLevel(logging.ERROR)
             app.logger.addHandler(mail_handler)
 
-        file_handler = RotatingFileHandler(os.path.join(logs_dir, 'cdl-admin.log'),
-                                           maxBytes=10240,
-                                           backupCount=10)
-        file_handler.setFormatter(logging.Formatter(
-            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
-        file_handler.setLevel(logging.INFO)
-        app.logger.addHandler(file_handler)
+        if app.config['LOG_TO_STDOUT']:
+            stream_handler = logging.StreamHandler()
+            app.logger.addHandler(stream_handler)
+        else:
+            logs_dir = app.config['LOGS_DIR']
+            os.makedirs(logs_dir, exist_ok=True)
+            file_handler = RotatingFileHandler(os.path.join(logs_dir, 'cdl-admin.log'),
+                                            maxBytes=10240,
+                                            backupCount=10)
+            file_handler.setFormatter(logging.Formatter(
+                '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
+            app.logger.addHandler(file_handler)
 
         app.logger.setLevel(logging.INFO)
-        app.logger.info('CDL Dashboard startup')
 
-        if app.config['USING_REAL_STORE']:
+        # logs on start up
+        app.logger.info('CDL Dashboard startup')
+        if using_real_store:
             app.logger.info(f'Using real store: {app.config['SHOPIFY_STORE']}')
         else:
             app.logger.info(f'Using test store: {app.config['SHOPIFY_STORE']}')

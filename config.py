@@ -1,35 +1,16 @@
 import os
 basedir = os.path.abspath(os.path.dirname(__file__))
 
-class Config:
+class BaseConfig:
     SECRET_KEY = os.getenv('SECRET_KEY') or '421a8124af2a47529272631abf3d0218'
+
+    # some deployments require logging to stdout
+    LOG_TO_STDOUT = os.getenv('LOG_TO_STDOUT') == '1'
 
     # integrations
     GSHEETS_CREDENTIALS = os.getenv("GSHEETS_CREDENTIALS")
     GSHEETS_CAPTURA_ID = os.getenv('GSHEETS_CAPTURA_ID')
-
-    USING_REAL_STORE=int(os.getenv('USE_REAL_STORE')) == 1
-
-    if USING_REAL_STORE:
-        SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-            'sqlite:///' + os.path.join(basedir, 'app.db')
-        LOGS_DIR = os.path.join(basedir, 'logs/')
-        DATA_DIR = os.path.join(basedir, 'data/')
-        
-        SHOPIFY_STORE = os.getenv('SHOPIFY_STORE')
-        SHOPIFY_LOCATION_ID = os.getenv('SHOPIFY_LOCATION_ID') 
-        SHOPIFY_API_TOKEN = os.getenv('SHOPIFY_API_TOKEN') 
-
-    else:
-        SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-            'sqlite:///' + os.path.join(basedir, 'app-test.db')
-        LOGS_DIR = os.path.join(basedir, 'logs-test/')
-        DATA_DIR = os.path.join(basedir, 'data-test/')
-        
-        SHOPIFY_STORE = os.getenv('TEST_SHOPIFY_STORE')
-        SHOPIFY_LOCATION_ID = os.getenv('TEST_SHOPIFY_LOCATION_ID') 
-        SHOPIFY_API_TOKEN = os.getenv('TEST_SHOPIFY_API_TOKEN') 
-        
+    
     SHEETY_USERNAME=os.getenv('SHEETY_USERNAME')
     SHEETY_BEARER=os.getenv('SHEETY_BEARER')
 
@@ -48,3 +29,25 @@ class Config:
     # Customize app:
     ADMIN_ACTIONS_PER_PAGE = 50
     VENDORS_PER_PAGE = 50
+
+class RealStoreConfig(BaseConfig):
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+        'sqlite:///' + os.path.join(basedir, 'app.db')
+    
+    SHOPIFY_STORE = os.getenv('SHOPIFY_STORE')
+    SHOPIFY_LOCATION_ID = os.getenv('SHOPIFY_LOCATION_ID') 
+    SHOPIFY_API_TOKEN = os.getenv('SHOPIFY_API_TOKEN') 
+
+    LOGS_DIR = os.path.join(basedir, 'logs/') # ignored if LOG_TO_STDOUT is truthy
+    DATA_DIR = os.path.join(basedir, 'data/')
+
+class TestStoreConfig(BaseConfig):
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+        'sqlite:///' + os.path.join(basedir, 'app-test.db')
+    
+    SHOPIFY_STORE = os.getenv('TEST_SHOPIFY_STORE')
+    SHOPIFY_LOCATION_ID = os.getenv('TEST_SHOPIFY_LOCATION_ID') 
+    SHOPIFY_API_TOKEN = os.getenv('TEST_SHOPIFY_API_TOKEN') 
+        
+    LOGS_DIR = os.path.join(basedir, 'logs-test/')
+    DATA_DIR = os.path.join(basedir, 'data-test/')
