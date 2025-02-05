@@ -96,7 +96,6 @@ def validate_vendors(df) -> pd.DataFrame:
             if vendor_name != vendor_in_db.name:
                 #update the df for the correct name
                 df.loc[row_filter, 'vendor'] = vendor_in_db.name
-                #add warning that row changed #TODO: keep this?
                 add_info(df, row_filter, f"Artesano remombrado de '{vendor_name}' a '{vendor_in_db.name}'")
 
         else:
@@ -131,7 +130,7 @@ def validate_skus(df) -> pd.DataFrame:
     Validates the 'sku' column in the dataframe.
     - Adds an error if the value is not a string.
     - Removes all spaces/blank characters using remove_whitespace.
-    - Verifies that the SKU is valid using sku_available(sku). #TODO
+    - Verifies that the SKU is valid and available.
     '''
     for index, row in df.iterrows():
         sku = row['sku']

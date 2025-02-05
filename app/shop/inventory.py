@@ -1,4 +1,5 @@
 import os
+import re
 import json
 from typing import Union
 from datetime import datetime, timezone, timedelta
@@ -357,9 +358,22 @@ def get_variants_using_query(query: str, cursor: str=None) -> tuple[list[dict], 
     return res.json()['data']['products']['nodes'], end_cursor
     # TODO implement pagination
 
+def valid_sku(sku: str) -> bool:
+    valid_chars = '^[0-9a-zA-ZáéíóúÁÉÍÓÚñÑ_-]*$'
+    return len(sku) < 16 and re.fullmatch(valid_chars, sku, re.UNICODE) is not None
+
 def sku_available(sku: str) -> bool:
     '''True if sku is available and contains no special characters and is not too long.'''
-    return True
+    if not valid_sku(sku):
+        return False
+    
+    query = q.get_variant_id_by_sku % sku
+
+    res = graphql_query(query)
+    data = res.json()['data']
+
+    return len(data['productVariants']['nodes']) == 0
+
 
 if __name__ == "__main__":
     data, time = get_local_inventory()

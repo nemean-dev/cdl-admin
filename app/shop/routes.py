@@ -191,7 +191,6 @@ def upload_product_quantities():
         return jsonify({'redirect_url': url_for('shop.update_product_quantities')})
 
     # TODO: check for updates in sheety before adjusting. Don't do it if timestamp is very recent.
-    # TODO 3 dicide which of these queries will update the metafield information for cost history, or create another one.
 
     # UPDATE INVENTORY QUANTITIES
     quantity_changes = [

@@ -41,6 +41,17 @@ get_variants_by_sku=\
 # TODO since we are using compareDigest to guarantee integrity, and to keep data clean, 
 # I should not allow 2 entries for the same sku in 'actualizar cantidades'
 
+get_variant_id_by_sku=\
+'''
+{
+  productVariants(first: 1, query: "sku:%s") {
+    nodes {
+      id
+    }
+  }
+}
+'''
+
 get_variants_from_products_query=\
 '''
 query GetVariantsFromProductsQuery {
