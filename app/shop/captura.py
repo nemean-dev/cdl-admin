@@ -34,7 +34,7 @@ def get_captura() -> pd.DataFrame:
     
     return df
 
-def captura_clenup_and_validation(captura: pd.DataFrame) -> pd.DataFrame:
+def captura_cleanup_and_validation(captura: pd.DataFrame) -> pd.DataFrame:
     '''
     Returns a cleaned up version of the dataframe with an additional columns 'errors' 
     and 'warnings':

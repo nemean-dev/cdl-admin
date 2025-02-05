@@ -1,7 +1,7 @@
 import os
 import json
 from datetime import datetime, timezone
-from flask import redirect, url_for, request, flash, render_template, send_file, current_app
+from flask import redirect, url_for, request, flash, render_template, send_file, current_app, jsonify
 from flask_login import login_required, current_user
 import sqlalchemy as sa
 from app import db
@@ -14,7 +14,7 @@ from app.integrations.sheety import clear_inventory_updates_sheet, fetch_etiquet
 from app.integrations.gsheets import append_df_to_sheet, clear_sheet_except_header
 from app.shop.inventory import get_local_inventory, delete_local_inventory, write_local_inventory, complete_sheety_data,\
     adjust_variant_quantities, set_variant_price, set_variant_cost, set_metafields, get_variants_using_query
-from app.shop.captura import get_captura, captura_clenup_and_validation, add_product_handles, upload_to_shopify, add_cost_histories
+from app.shop.captura import get_captura, captura_cleanup_and_validation, add_product_handles, upload_to_shopify, add_cost_histories
 
 @bp.route('/etiquetas-generar-pdf')
 @login_required
@@ -178,22 +178,17 @@ def start_upload_product_quantities():
 @login_required
 def upload_product_quantities():    
     # TODO: view is dirty but working... needs a lot of refactoring
-    messages = []
-
     df, timestamp, total_errors = get_local_inventory()
     if total_errors > 0:
-        messages.append({
-            'message': 'No es posible subir cantidades mientras aún hay errores. Porfavor revisa los reglones marcadoes en rojo.', 
-            'category': 'error'
-        })
-        return messages
+        flash('No es posible subir cantidades mientras aún hay errores. '
+              'Porfavor revisa los reglones marcadoes en rojo.', 
+              'error')
+        return jsonify({'redirect_url': url_for('shop.update_product_quantities')})
     
     if not current_user.is_superadmin:
-        messages.append({
-            'message': 'Tu usuario no tiene los permisos necesarios para realizar esta acción.', 
-            'category': 'warning' 
-        })
-        return messages
+        flash('Tu usuario no tiene los permisos necesarios para realizar esta acción.', 
+              'warning')
+        return jsonify({'redirect_url': url_for('shop.update_product_quantities')})
 
     # TODO: check for updates in sheety before adjusting. Don't do it if timestamp is very recent.
     # TODO 3 dicide which of these queries will update the metafield information for cost history, or create another one.
@@ -208,16 +203,10 @@ def upload_product_quantities():
     try:
         adjust_variant_quantities(quantity_changes)
     except:
-        messages.append({
-            "message": 'Fracasó el intento de actualizar el inventario. Si el error persiste, contacta a un administrador.',
-            "category": 'error'
-        })
-        return messages
+        flash('Fracasó el intento de actualizar el inventario. Si el error persiste, contacta a un administrador.', 'error')
+        return jsonify({'redirect_url': url_for('shop.update_product_quantities')})
     
-    messages.append({
-            "message": "Se actualizaron las cantidades correctamente.",
-            "category": "info"
-        })
+    flash("Se actualizaron las cantidades correctamente.")
     update_quantities_action = AdminAction(action="Actualizar cantidades de inventario", status='Completado', admin=current_user)
     db.session.add(update_quantities_action)
     db.session.commit()
@@ -236,23 +225,20 @@ def upload_product_quantities():
             update_prices_action.errors += f"{row['sku']},"
             continue
     if error_skus:
-        messages.append({
-            "message": f'Hubieron errores al actualizar los precios de venta de algunos productos. Por favor actualízalos a mano. \nskus: {", ".join(error_skus)}',
-            "category": "error"
-        })
+        flash('Hubieron errores al actualizar los precios de venta de algunos productos.' 
+              'Por favor actualízalos a mano. \nskus: {", ".join(error_skus)}', 
+              'error')
         update_prices_action.status = 'Incompleto'
     else:
-        messages.append({
-            "message": "Se actualizaron los precios de venta correctamente",
-            "category": "info"
-        })
+        flash("Se actualizaron los precios de venta correctamente")
         update_prices_action.status = 'Completado'
     db.session.add(update_prices_action)
     db.session.commit()
 
     # UPDATE PRODUCT COST
     cost_changes = df.loc[~df['newCost'].isna()]
-    update_costs_action = AdminAction(action="Actualizar precios de compra de variantes", status='En progreso', admin=current_user)
+    update_costs_action = AdminAction(action="Actualizar precios de compra de variantes", 
+                                      status='En progreso', admin=current_user)
     db.session.add(update_costs_action)
     db.session.commit()
     error_skus = []
@@ -264,16 +250,12 @@ def upload_product_quantities():
             update_costs_action.errors += f"{row['sku']},"
             continue
     if error_skus:
-        messages.append({
-            "message": f'Hubieron problemas al actualizar los precios de compra de algunos productos. Por favor actualízalos a mano. \nskus: {", ".join(error_skus)}',
-            "category": "error"
-        })
+        flash(f'Hubieron problemas al actualizar los precios de compra de algunos productos.'
+              ' Por favor actualízalos a mano. \nskus: {", ".join(error_skus)}',
+              'error')
         update_costs_action.status = 'Incompleto'
     else:
-        messages.append({
-            "message": "Se actualizaron los precios de compra correctamente",
-            "category": "info"
-        })
+        flash("Se actualizaron los precios de compra correctamente")
         update_costs_action.status = 'Completado'
     db.session.add(update_costs_action)
     db.session.commit()
@@ -291,21 +273,15 @@ def upload_product_quantities():
     try:
         set_metafields(cost_histories)
     except:
-        messages.append({
-            "message": 'Hubieron errores al actualizar el metafield "cost history"',
-            "category": "error"
-        })
+        flash('Hubieron errores al actualizar el metafield "cost history"', 'error')
         update_cost_history_action.status = 'Incompleto'
     else:
-        messages.append({
-            "message": "Se actualizaron los metafields correctamente",
-            "category": "info"
-        })
+        flash("Se actualizaron los metafields correctamente")
         update_cost_history_action.status = 'Completado'
     db.session.add(update_cost_history_action)
     db.session.commit()
 
-    return messages
+    return jsonify({'redirect_url': url_for('shop.update_product_quantities')})
 
 # ---------------------------------- CAPTURA ---------------------------------- #
 @bp.route('/captura', methods=['GET', 'POST'])
@@ -324,7 +300,7 @@ def review_new_products():
             return render_template('shop/captura.html', title='Captura', 
                                    refresh_form=refresh_form, column_list=column_list)
 
-        products = captura_clenup_and_validation(df)
+        products = captura_cleanup_and_validation(df)
         total_warnings = products['warnings'].count()
         total_errors = products['errors'].count()
         products_dict = products.to_dict(orient='records')
@@ -361,56 +337,60 @@ def upload_new_products():
         return redirect(url_for('shop.review_new_products'))
     
     df = get_captura()
-    products = captura_clenup_and_validation(df)
+    if df.shape[0] == 0:
+        flash('There are no products to upload')
+        return redirect(url_for('dashboard.index'))
+
+    products = captura_cleanup_and_validation(df)
     total_errors = products['errors'].count()
     total_warnings = products['warnings'].count()
 
-    messages = []
-
     # check for errors and warnings
     if total_errors:
-        messages.append({
-            'message':'No es posible subir cantidades mientras aún hay errores. Porfavor revisa los reglones marcadoes en rojo.', 
-            'category': 'error'
-        })
-        return redirect(url_for('shop.update_product_quantities'))
+        flash('No es posible subir cantidades mientras aún hay errores. '
+              'Porfavor revisa los reglones marcadoes en rojo.', 
+              'error')
+        return jsonify({'redirect_url': url_for('shop.review_new_products')})
     
     if total_warnings and not current_user.is_superadmin:
-        messages.append({
-            'message':'Si los productos tienen advertencias (renglones en amarillo), solo un admisnitrador los puede subir.', 
-            'category': 'error'
-        })
-        return redirect(url_for('shop.update_product_quantities'))
+        flash('Si los productos tienen advertencias (renglones en amarillo), '
+              'solo un admisnitrador los puede subir.', 
+              'error')
+        return jsonify({'redirect_url': url_for('shop.review_new_products')})
 
     # Add product handle and cost history
     if 'handle' not in products:
         products = add_product_handles(products)
     else:
-        current_app.logger.error('Cannot add automatic handles with add_product_handles() if custom handles have been entered.')
-        messages.append({
-            'message':'No se subieron los productos pues no puede haber una columna "handle" en los datos.', 
-            'category': 'error'
-        })
-        return messages
+        current_app.logger.error(
+            'Cannot add automatic handles with add_product_handles() if custom handles have been entered.')
+        flash('No se subieron los productos pues no puede haber una columna "handle" en los datos.', 
+              'error')
+        return jsonify({'redirect_url': url_for('shop.review_new_products')})
 
     products = add_cost_histories(products)
     
     # create the AdminAction
-    publish_products_action = AdminAction(action="Publicar Productos", status='En proceso...', admin=current_user)
+    publish_products_action = AdminAction(action="Publicar Productos", 
+                                          status='En proceso...', 
+                                          admin=current_user)
     db.session.add(publish_products_action)
     db.session.commit()
 
     timestamp = int(get_timestamp())
 
+    captura_path = os.path.join(current_app.config['DATA_DIR'], 'captura')
+    os.makedirs(captura_path, exist_ok=True)
+
     # add files to the AdminAction
-    raw_csv_path = f'{current_app.config['DATA_DIR']}/captura/raw_products{timestamp}.csv'
+    raw_csv_path = os.path.join(captura_path, f'raw_products{timestamp}.csv')
     df.to_csv(raw_csv_path)
     raw_csv_file = File(path=raw_csv_path, admin_action=publish_products_action)
     db.session.add(raw_csv_file)
     db.session.commit()
 
     # add files to the AdminAction
-    processed_csv_path = f'{current_app.config['DATA_DIR']}/captura/processed_products{timestamp}.csv'
+    processed_csv_path = os.path.join(captura_path, f'processed_products{timestamp}.csv')
     products.to_csv(processed_csv_path)
     processed_csv_file = File(path=processed_csv_path, admin_action=publish_products_action)
     db.session.add(processed_csv_file)
@@ -420,10 +400,9 @@ def upload_new_products():
         upload_to_shopify(products)
     except Exception as e:
         current_app.logger.error(e)
-        messages.append({
-            'message':'Sucedió un error inesperado. No vuelvas a subir los productos. Contacta a un administrador.', 
-            'category': 'error'
-        })
+        flash('Sucedió un error inesperado. No vuelvas a subir los productos. '
+              'Contacta a un administrador.', 
+              'error')
     else:
         Metadata.set_last_product_handle(products.iloc[-1]['handle'])
 
@@ -435,4 +414,4 @@ def upload_new_products():
         db.session.add(publish_products_action)
         db.session.commit()
 
-    return messages
+    return jsonify({'redirect_url': url_for('shop.review_new_products')})
