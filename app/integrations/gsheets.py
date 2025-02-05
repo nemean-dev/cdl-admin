@@ -49,12 +49,18 @@ def append_df_to_sheet(spreadsheet_id, sheet_name, credentials_path, df: pd.Data
     
     # reorder DataFrame columns to match the sheet's
     ordered_df = df.reindex(columns=existing_headers, fill_value="")
+
+    next_row = len(existing_data) + 1
+    
+    # Ensure there are enough rows in the sheet
+    current_row_count = len(existing_data)
+    required_rows = len(ordered_df) + next_row - 1
+    if required_rows > current_row_count:
+        sheet.add_rows(required_rows - current_row_count)
     
     # Append from first empty row
-    next_row = len(existing_data) + 1
     ordered_df = ordered_df.fillna("") # remove nan to avoid errors
     sheet.update(f'A{next_row}', ordered_df.values.tolist())
-
 
 def clear_sheet_except_header(spreadsheet_id, sheet_name, credentials_path) -> None:
     """
