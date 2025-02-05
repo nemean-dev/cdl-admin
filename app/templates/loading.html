@@ -21,8 +21,8 @@
           } else {
             document.body.innerHTML = `
               <div style="text-align: center; margin-top: 20%;">
-                <h2>Process Completed</h2>
-                <button onclick="window.location.href='{{ url_for('dashboard.index') }}'">Return to Home</button>
+                <h2>Proceso Completado.</h2>
+                <button onclick="window.location.href='{{ url_for('dashboard.index') }}'">Inicio</button>
               </div>
             `;
           }
@@ -30,8 +30,9 @@
         .catch(() => {
           document.body.innerHTML = `
             <div style="text-align: center; margin-top: 20%;">
-              <h2>Process Completed</h2>
-              <button onclick="window.location.href='{{ url_for('dashboard.index') }}'">Return to Home</button>
+              <h2>Error de conexión.</h2> 
+              <p>Por favor verifica que tu proceso se haya completado correctamente.</p>
+              <button onclick="window.location.href='{{ url_for('dashboard.index') }}'">Inicio</button>
             </div>
           `;
         });
