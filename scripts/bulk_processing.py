@@ -48,20 +48,22 @@ mutation {
   }
 }
 '''
-import os
 import json
 import pandas as pd
-from flask import current_app
 from collections import defaultdict
 
-BASE_PATH = os.path.join(current_app.config['DATA_DIR'], 'bulk')
-JSONL_PATH = os.path.join(BASE_PATH, 'bulk_operation.jsonl')
+def products_df(data_path: str, output_path: str = None) -> pd.DataFrame:
+    '''
+    Output columns:
+    id, title, vendor, total_variants, metafields
 
-def products_df(path: str = None) -> pd.DataFrame:
-    '''id, title, vendor, total_variants, metafields'''
+    Params:
+    - data_path: should point to a jsonl file representing bulk operation result
+    - output_path: if given, will write csv to this output path.
+    '''
     products = {}
     
-    with open(JSONL_PATH, 'r', encoding='utf-8') as f:
+    with open(data_path, 'r', encoding='utf-8') as f:
         for line in f:
             data = json.loads(line)
             
@@ -86,14 +88,22 @@ def products_df(path: str = None) -> pd.DataFrame:
                 products[product_id]['total_variants'] += 1
     
     df = pd.DataFrame(products.values())
-    if path:
-        df.to_csv(path, index=False)
+    if output_path:
+        df.to_csv(output_path, index=False)
     return df
 
-def variants_df(path: str = None) -> pd.DataFrame:
+def variants_df(data_path: str, output_path: str = None) -> pd.DataFrame:
+    '''
+    Output columns:
+    id, sku, cost_history, variant_id
+
+    Params:
+    - data_path: should point to a jsonl file representing bulk operation result
+    - output_path: if given, will write csv to this output path.
+    '''
     variants = []
     
-    with open(JSONL_PATH, 'r', encoding='utf-8') as f:
+    with open(data_path, 'r', encoding='utf-8') as f:
         for line in f:
             data = json.loads(line)
             
@@ -102,17 +112,25 @@ def variants_df(path: str = None) -> pd.DataFrame:
                     'id': data['id'],
                     'sku': data['sku'],
                     'cost_history': data['metafield'],
-                    'product_id': data['__parentId']
+                    'variant_id': data['__parentId']
                 })
     
     df = pd.DataFrame(variants)
-    if path:
-        df.to_csv(path, index=False)
+    if output_path:
+        df.to_csv(output_path, index=False)
     return df
 
-def vendors_df(path: str = None) -> pd.DataFrame:
+def vendors_df(data_path: str, output_path: str = None) -> pd.DataFrame:
+    '''
+    Output columns:
+    number_of_products, number_of_variants, towns (string repr of list), vendor
+
+    Params:
+    - data_path: should point to a jsonl file representing bulk operation result
+    - output_path: if given, will write csv to this output path.
+    '''
     vendors = defaultdict(lambda: {'number_of_products': 0, 'number_of_variants': 0, 'towns': set()})
-    products = products_df()
+    products = products_df(data_path)
 
     for _, row in products.iterrows():
         vendor = row['vendor']
@@ -134,15 +152,17 @@ def vendors_df(path: str = None) -> pd.DataFrame:
 
     df = pd.DataFrame(vendors.values())
     df['towns'] = df['towns'].apply(list)
-    if path:
-        df.to_csv(path, index=False)
+    if output_path:
+        df.to_csv(output_path, index=False)
     return df
 
 
 if __name__=='__main__':
     import os
-    os.makedirs(BASE_PATH, exist_ok=True)
 
-    products_df(os.path.join(BASE_PATH, 'products.csv'))
-    variants_df(os.path.join(BASE_PATH, 'variants.csv'))
-    vendors_df(os.path.join(BASE_PATH, 'vendors.csv'))
+    BASE_PATH = os.path.join('data/', 'bulk')
+    JSONL_PATH = os.path.join(BASE_PATH, 'bulk_operation.jsonl')
+
+    products_df(JSONL_PATH, os.path.join(BASE_PATH, 'products.csv'))
+    variants_df(JSONL_PATH, os.path.join(BASE_PATH, 'variants.csv'))
+    vendors_df(JSONL_PATH, os.path.join(BASE_PATH, 'vendors.csv'))
