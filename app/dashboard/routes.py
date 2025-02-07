@@ -15,6 +15,10 @@ def before_request():
         current_user.last_seen = datetime.now(timezone.utc)
         db.session.commit()
 
+@bp.route("/health")
+def health():
+    return "OK", 200
+
 @bp.route('/')
 @bp.route('/index')
 @login_required
