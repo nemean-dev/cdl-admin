@@ -6,19 +6,13 @@ from datetime import datetime, timezone, timedelta
 import pandas as pd
 from numpy import nan
 from flask import current_app
+from app import storage_service
+from app.integrations.storage import StorageNotFoundError
 import app.shop.graphql_queries as q
 from app.integrations.shopify import graphql_query, raise_for_user_errors
 
-class PathConfig:
-    @property
-    def base_path(self):
-        return os.path.join(current_app.config['DATA_DIR'], 'update_quantities')
-    @property
-    def quantities_file_path(self):
-        return os.path.join(self.base_path, 'quantities.csv')
-    @property
-    def timestamp_file_path(self):
-        return os.path.join(self.base_path, 'timestamp')
+quantities_path = 'quantities/quantities.csv'
+timestamp_path  = 'quantities/timestamp'
 
 def get_local_inventory() -> tuple[pd.DataFrame, str, int]:
     """
@@ -29,15 +23,14 @@ def get_local_inventory() -> tuple[pd.DataFrame, str, int]:
     
     Both are None if files missing.
     """
-    paths = PathConfig
+    storage = storage_service()
     try:
-        data = pd.read_csv(paths.quantities_file_path)
-        with open(paths.timestamp_file_path, 'r') as f:
-            saved_time = float(f.read(50))
-            time = datetime.fromtimestamp(saved_time, tz=timezone.utc)
+        data = storage.download_csv(quantities_path)
+        saved_time = float(storage.download_text(timestamp_path))
+        time = datetime.fromtimestamp(saved_time, tz=timezone.utc)
         total_errors = data.loc[data['errors'] != 'none', 'errors'].count()
         
-    except FileNotFoundError:
+    except StorageNotFoundError:
         data = None
         time = None
         total_errors = 0
@@ -45,18 +38,15 @@ def get_local_inventory() -> tuple[pd.DataFrame, str, int]:
     return data, time, total_errors
 
 def delete_local_inventory():
-    paths = PathConfig
-    if os.path.exists(paths.quantities_file_path):
-        os.remove(paths.quantities_file_path)
-    if os.path.exists(paths.timestamp_file_path):
-        os.remove(paths.timestamp_file_path)
+    storage = storage_service()
+    storage.delete(quantities_path)
+    storage.delete(timestamp_path)
 
 def write_local_inventory(df: pd.DataFrame):
-    paths = PathConfig
-    df.to_csv(paths.quantities_file_path)
-    with open(paths.timestamp_file_path, 'w') as f:
-        now = datetime.now(timezone.utc)
-        f.write(str(now.timestamp()))
+    storage = storage_service()
+    storage.upload_csv(quantities_path, df)
+    now = datetime.now(timezone.utc)
+    storage.upload_text(timestamp_path, str(now.timestamp()))
 
 def complete_sheety_data(sheety_df: pd.DataFrame) -> pd.DataFrame:
     # csv cols: sku, qty, display_name, vendor, new_price, price_delta, new_cost, cost_delta

@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from flask import redirect, url_for, request, flash, render_template, send_file, current_app, jsonify
 from flask_login import login_required, current_user
 import sqlalchemy as sa
-from app import db
+from app import db, storage_service
 from app.models import AdminAction, Vendor, File, Metadata
 from app.utils import get_timestamp
 from app.shop import bp
@@ -378,19 +378,21 @@ def upload_new_products():
 
     timestamp = int(get_timestamp())
 
-    captura_path = os.path.join(current_app.config['DATA_DIR'], 'captura')
-    os.makedirs(captura_path, exist_ok=True)
+    # captura_path = os.path.join(current_app.config['DATA_DIR'], 'captura')
+    # os.makedirs(captura_path, exist_ok=True)
 
     # add files to the AdminAction
-    raw_csv_path = os.path.join(captura_path, f'raw_products{timestamp}.csv')
-    df.to_csv(raw_csv_path)
+    storage = storage_service()
+
+    raw_csv_path = f'captura/raw_products{timestamp}.csv'
+    storage.upload_csv(raw_csv_path, df)
     raw_csv_file = File(path=raw_csv_path, admin_action=publish_products_action)
     db.session.add(raw_csv_file)
     db.session.commit()
 
     # add files to the AdminAction
-    processed_csv_path = os.path.join(captura_path, f'processed_products{timestamp}.csv')
-    products.to_csv(processed_csv_path)
+    processed_csv_path = f'captura/processed_products{timestamp}.csv'
+    storage.upload_csv(processed_csv_path, products)
     processed_csv_file = File(path=processed_csv_path, admin_action=publish_products_action)
     db.session.add(processed_csv_file)
     db.session.commit()

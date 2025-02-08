@@ -61,7 +61,10 @@ class StorageService:
                 if e.response['Error']['Code'] == 'NoSuchKey':
                     raise StorageNotFoundError(f"S3 object not found: {key}")
                 raise
-    
+
+    # TODO change all processes that require file deletion so that this is no 
+    # longer necessary, then remove this method and any delete privileges from 
+    # the AWS permissions.
     def delete(self, key: str) -> None:
         '''Deletes a file from storage.'''
         key = self._get_path_or_key(key)
@@ -82,11 +85,11 @@ class StorageService:
         key = self._get_path_or_key(key)
         return json.loads(self.download_text(key))
 
-    def upload_csv(self, key: str, df: pd.DataFrame) -> None:
+    def upload_csv(self, key: str, df: pd.DataFrame, index:bool=False) -> None:
         '''Uploads a Pandas DataFrame as a CSV to storage.'''
         key = self._get_path_or_key(key)
         csv_buffer = StringIO()
-        df.to_csv(csv_buffer, index=False)
+        df.to_csv(csv_buffer, index=index)
         self.upload_text(key, csv_buffer.getvalue())
 
     def download_csv(self, key: str) -> pd.DataFrame:

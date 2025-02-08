@@ -51,6 +51,13 @@ mutation {
 import json
 import pandas as pd
 from collections import defaultdict
+from app import storage_service
+
+def read_jsonl(data_path: str) -> list[dict]:
+    '''Reads JSONL data from storage service.'''
+    storage = storage_service()
+    data = storage.download_text(data_path)
+    return [json.loads(line) for line in data.splitlines()]
 
 def products_df(data_path: str, output_path: str = None) -> pd.DataFrame:
     '''
@@ -63,33 +70,31 @@ def products_df(data_path: str, output_path: str = None) -> pd.DataFrame:
     '''
     products = {}
     
-    with open(data_path, 'r', encoding='utf-8') as f:
-        for line in f:
-            data = json.loads(line)
-            
-            if 'vendor' in data:  # Product entry
-                product_id = data['id']
-                products[product_id] = {
-                    'id': product_id,
-                    'title': data['title'],
-                    'vendor': data['vendor'],
-                    'total_variants': 0,
-                    'metafields': [],
-                }
-            elif 'namespace' in data and data['__parentId'] in products:  # product metafield
-                product_id = data['__parentId']
-                products[product_id]['metafields'].append({
-                    'namespace': data.get('namespace'),
-                    'key': data.get('key'),
-                    'value': data.get('value')
-                })
-            elif 'sku' in data: #product variant
-                product_id = data['__parentId']
-                products[product_id]['total_variants'] += 1
+    for data in read_jsonl(data_path):
+        if 'vendor' in data:  # Product entry
+            product_id = data['id']
+            products[product_id] = {
+                'id': product_id,
+                'title': data['title'],
+                'vendor': data['vendor'],
+                'total_variants': 0,
+                'metafields': [],
+            }
+        elif 'namespace' in data and data['__parentId'] in products:  # product metafield
+            product_id = data['__parentId']
+            products[product_id]['metafields'].append({
+                'namespace': data.get('namespace'),
+                'key': data.get('key'),
+                'value': data.get('value')
+            })
+        elif 'sku' in data: #product variant
+            product_id = data['__parentId']
+            products[product_id]['total_variants'] += 1
     
     df = pd.DataFrame(products.values())
     if output_path:
-        df.to_csv(output_path, index=False)
+        storage = storage_service()
+        storage.upload_csv(output_path, df)
     return df
 
 def variants_df(data_path: str, output_path: str = None) -> pd.DataFrame:
@@ -103,21 +108,21 @@ def variants_df(data_path: str, output_path: str = None) -> pd.DataFrame:
     '''
     variants = []
     
-    with open(data_path, 'r', encoding='utf-8') as f:
-        for line in f:
-            data = json.loads(line)
-            
-            if 'sku' in data:  # Variant entry
-                variants.append({
-                    'id': data['id'],
-                    'sku': data['sku'],
-                    'cost_history': data['metafield'],
-                    'variant_id': data['__parentId']
-                })
+    for data in read_jsonl(data_path):
+        if 'sku' in data:  # Variant entry
+            variants.append({
+                'id': data['id'],
+                'sku': data['sku'],
+                'cost_history': data['metafield'],
+                'variant_id': data['__parentId']
+            })
     
     df = pd.DataFrame(variants)
+
     if output_path:
-        df.to_csv(output_path, index=False)
+        storage = storage_service()
+        storage.upload_csv(output_path, df)
+        
     return df
 
 def vendors_df(data_path: str, output_path: str = None) -> pd.DataFrame:
@@ -152,17 +157,17 @@ def vendors_df(data_path: str, output_path: str = None) -> pd.DataFrame:
 
     df = pd.DataFrame(vendors.values())
     df['towns'] = df['towns'].apply(list)
+
     if output_path:
-        df.to_csv(output_path, index=False)
+        storage = storage_service()
+        storage.upload_csv(output_path, df)
+
     return df
 
 
 if __name__=='__main__':
-    import os
+    JSONL_PATH = 'bulk/bulk_operation.jsonl'
 
-    BASE_PATH = os.path.join('data/', 'bulk')
-    JSONL_PATH = os.path.join(BASE_PATH, 'bulk_operation.jsonl')
-
-    products_df(JSONL_PATH, os.path.join(BASE_PATH, 'products.csv'))
-    variants_df(JSONL_PATH, os.path.join(BASE_PATH, 'variants.csv'))
-    vendors_df(JSONL_PATH, os.path.join(BASE_PATH, 'vendors.csv'))
+    products_df(JSONL_PATH, 'bulk/products.csv')
+    variants_df(JSONL_PATH, 'bulk/variants.csv')
+    vendors_df (JSONL_PATH, 'bulk/vendors.csv')
