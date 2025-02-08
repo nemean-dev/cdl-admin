@@ -6,6 +6,8 @@ data-test
 logs
 logs-test
 
+.env*
+
 *__pycache__*
 *.db
 
