@@ -14,7 +14,7 @@ login = LoginManager()
 login.login_view = 'auth.login'
 login.login_message = 'Necesitas inciar sesión para acceder a esta página'
 
-def get_storage() -> StorageService:
+def storage_service() -> StorageService:
     '''
     Use this to manage storage throughout the app, given that storage will be s3 
     or some other service in deployment and local in development.

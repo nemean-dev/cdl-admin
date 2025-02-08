@@ -46,16 +46,6 @@ class StorageService:
     def download_text(self, key: str) -> str:
         '''Downloads plain text from storage.'''
         key = self._get_path_or_key(key)
-        if self.use_local_storage:
-            with open(key, 'r', encoding='utf-8') as f:
-                return f.read()
-        else:
-            obj = self.client.get_object(Bucket=self.bucket_name, Key=key)
-            return obj['Body'].read().decode('utf-8')
-
-    def download_text(self, key: str) -> str:
-        '''Downloads plain text from storage.'''
-        key = self._get_path_or_key(key)
         
         if self.use_local_storage:
             if not os.path.exists(key):
@@ -71,6 +61,16 @@ class StorageService:
                 if e.response['Error']['Code'] == 'NoSuchKey':
                     raise StorageNotFoundError(f"S3 object not found: {key}")
                 raise
+    
+    def delete(self, key: str) -> None:
+        '''Deletes a file from storage.'''
+        key = self._get_path_or_key(key)
+        
+        if self.use_local_storage:
+            if os.path.exists(key):
+                os.remove(key)
+        else:
+            self.client.delete_object(Bucket=self.bucket_name, Key=key)
 
     def upload_json(self, key: str, data: Any) -> None:
         '''Uploads JSON data to storage.'''
