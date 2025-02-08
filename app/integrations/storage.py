@@ -1,10 +1,15 @@
 import os
-import boto3
 import json
 import pandas as pd
+import boto3
 from io import StringIO
+from botocore.exceptions import ClientError
 from flask import current_app
 from typing import Any
+
+class StorageNotFoundError(Exception):
+    '''Raised when a requested file or object is not found in storage.'''
+    pass
 
 class StorageService:    
     def __init__(self):
@@ -23,7 +28,8 @@ class StorageService:
     def _get_path_or_key(self, key: str) -> str:
         '''
         Returns the full local file path or full key for a given key. (starting 
-        from the data directory)'''
+        from the data directory)
+        '''
         if key[0] == '/':
             key = key[1:]
         return os.path.join(self.data_path, key)
@@ -46,6 +52,25 @@ class StorageService:
         else:
             obj = self.client.get_object(Bucket=self.bucket_name, Key=key)
             return obj['Body'].read().decode('utf-8')
+
+    def download_text(self, key: str) -> str:
+        '''Downloads plain text from storage.'''
+        key = self._get_path_or_key(key)
+        
+        if self.use_local_storage:
+            if not os.path.exists(key):
+                raise StorageNotFoundError(f"File not found: {key}")
+            with open(key, 'r', encoding='utf-8') as f:
+                return f.read()
+        
+        else:
+            try:
+                obj = self.client.get_object(Bucket=self.bucket_name, Key=key)
+                return obj['Body'].read().decode('utf-8')
+            except ClientError as e:
+                if e.response['Error']['Code'] == 'NoSuchKey':
+                    raise StorageNotFoundError(f"S3 object not found: {key}")
+                raise
 
     def upload_json(self, key: str, data: Any) -> None:
         '''Uploads JSON data to storage.'''
