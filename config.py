@@ -1,9 +1,11 @@
 import os
-basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
     SECRET_KEY = os.getenv('SECRET_KEY') or '421a8124af2a47529272631abf3d0218'
     
+    USE_LOCAL_STORAGE = os.getenv('USE_LOCAL_STORAGE', 'False').lower() in ['true', '1']
+    basedir = os.path.abspath(os.path.dirname(__file__)) if USE_LOCAL_STORAGE else ''
+
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
         'sqlite:///' + os.path.join(basedir, 'app.db')
     
@@ -33,7 +35,6 @@ class Config:
     ADMINS = os.getenv('MAIL_ADMINS').split(',') if os.getenv('MAIL_ADMINS') else None
 
     # S3 storage
-    USE_LOCAL_STORAGE = os.getenv('USE_LOCAL_STORAGE', False)
     AWS_ACCESS_KEY = os.getenv('AWS_ACCESS_KEY')
     AWS_SECRET_KEY = os.getenv('AWS_SECRET_KEY')
     AWS_REGION = os.getenv('AWS_REGION')
