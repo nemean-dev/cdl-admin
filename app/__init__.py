@@ -5,7 +5,8 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
-from config import RealStoreConfig, TestStoreConfig
+from config import Config
+from app.integrations.storage import StorageService
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -13,10 +14,22 @@ login = LoginManager()
 login.login_view = 'auth.login'
 login.login_message = 'Necesitas inciar sesión para acceder a esta página'
 
-using_real_store = os.getenv('USE_REAL_STORE', '0') == '1'
-config = RealStoreConfig if using_real_store else TestStoreConfig
+def get_storage() -> StorageService:
+    '''
+    Use this to manage storage throughout the app, given that storage will be s3 
+    or some other service in deployment and local in development.
 
-def create_app(config_class=config):
+    e.g.
+    ```
+    from app import get_storage
+
+    storage = get_storage()
+    storage.upload_json('path/to/file.json', {'key': 'value'})
+    ```
+    '''
+    return StorageService()
+
+def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
@@ -40,7 +53,7 @@ def create_app(config_class=config):
     os.makedirs(data_dir, exist_ok=True)
 
     # logging and error emailing
-    if using_real_store or (not app.debug and not app.testing):
+    if not app.debug and not app.testing:
         if app.config['MAIL_SERVER']:
             auth = None
             if app.config['MAIL_USERNAME'] or app.config['MAIL_PASSWORD']:
@@ -71,13 +84,7 @@ def create_app(config_class=config):
             app.logger.addHandler(file_handler)
 
         app.logger.setLevel(logging.INFO)
-
-        # logs on start up
         app.logger.info('CDL Dashboard startup')
-        if using_real_store:
-            app.logger.info(f'Using real store: {app.config['SHOPIFY_STORE']}')
-        else:
-            app.logger.info(f'Using test store: {app.config['SHOPIFY_STORE']}')
     
     return app
 
