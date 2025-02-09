@@ -9,7 +9,7 @@ import sqlalchemy.orm as orm
 from app import db, login
 from app.utils import simple_lower_ascii, is_multiline
 
-MIN_PASSWORD_LENGTH = 8 # TODO: frontend validation
+MIN_PASSWORD_LENGTH = 8
 
 @login.user_loader
 def load_user(id):
