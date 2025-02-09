@@ -84,7 +84,16 @@ def create_app(config_class=Config):
             app.logger.addHandler(file_handler)
 
         app.logger.setLevel(logging.INFO)
-        app.logger.info('CDL Dashboard startup')
+        app.logger.info(
+            '\n\n----------------------------------- CDL Dashboard Startup -----------------------------------\n\n'
+           f' - Store: {app.config["SHOPIFY_STORE"]}\n\n')
+    else: 
+        app.logger.info(
+            '\n\n----------------------------------- CDL Dashboard Startup -----------------------------------\n\n'
+           f' - Store: {app.config["SHOPIFY_STORE"]}\n'
+            ' - Logging not configured\n'
+            ' - Emails on server errors not configured\n')
+
     
     return app
 
