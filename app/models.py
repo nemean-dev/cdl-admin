@@ -1,6 +1,7 @@
 from typing import Optional
 from datetime import datetime, timezone
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask import current_app
 from flask_login import UserMixin
 import sqlalchemy as sa
 import sqlalchemy.orm as orm
@@ -34,7 +35,7 @@ class User(UserMixin, db.Model):
     def set_password(self, password):
         if len(password) < MIN_PASSWORD_LENGTH:
             raise ValueError(f"Password must be at least {MIN_PASSWORD_LENGTH} characters long")
-        self.password_hash = generate_password_hash(password)
+        self.password_hash = generate_password_hash(password+current_app.config['PASSWORD_PEPPER'])
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
