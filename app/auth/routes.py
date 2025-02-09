@@ -20,6 +20,11 @@ def login():
         user = db.session.scalar(
             sa.select(User).where(User.email == form.email.data))
         
+        if user.failed_logins > 100:
+            flash('Han habido demasiados intentos de inicio de sesión erróneos.' 
+                  'Contacta a un administrador si el problema persiste.')
+            redirect(url_for('auth.login'))
+        
         if user is not None and user.check_password(form.password.data):
             login_user(user, remember=form.remember_me.data)
             flash('Inicio de sesión exitoso')

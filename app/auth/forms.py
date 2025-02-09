@@ -26,7 +26,7 @@ class RegisterUsersForm(FlaskForm):
     lname = StringField('Apellido', validators=[Length(min=0, max=128)])
     password = PasswordField('Contraseña', validators=[
         DataRequired(), 
-        Length(min=MIN_PASSWORD_LENGTH, max=30, message='Mínimo 8 caracteres'),
+        Length(min=MIN_PASSWORD_LENGTH, max=60, message='Mínimo 8 caracteres'),
         contains_number])
     submit = SubmitField('Crear Usuario')
 
@@ -37,7 +37,7 @@ class ResetPasswordRequestForm(FlaskForm):
 class ResetPasswordForm(FlaskForm):
     password = PasswordField('Password', validators=[
         DataRequired(), 
-        Length(min=MIN_PASSWORD_LENGTH, max=30, message='Mínimo 8 caracteres'),
+        Length(min=MIN_PASSWORD_LENGTH, max=60, message='Mínimo 8 caracteres'),
         contains_number])
     password2 = PasswordField(
         'Repeat Password', validators=[DataRequired(), EqualTo('password')])

@@ -29,6 +29,7 @@ class User(UserMixin, db.Model):
     actions: orm.WriteOnlyMapped['AdminAction'] = orm.relationship(
         back_populates='admin')
     is_superadmin: orm.Mapped[bool] = orm.mapped_column(sa.Boolean, default=False)
+    failed_logins: orm.Mapped[int] = orm.mapped_column(sa.Integer, default=0)
 
     def __repr__(self):
         return '<User {}>'.format(self.email)
