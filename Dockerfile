@@ -1,4 +1,4 @@
-FROM python:3.12-slim-bookworm
+FROM python:3.12-slim
 
 WORKDIR /cdl-admin
 EXPOSE 80
@@ -6,8 +6,7 @@ EXPOSE 80
 ENV FLASK_APP=cdl_admin.py
 
 COPY requirements.txt ./
-RUN pip install -r requirements.txt
-RUN pip install gunicorn psycopg2-binary
+RUN pip install -r requirements.txt && pip install gunicorn psycopg
 
 COPY cdl_admin.py config.py boot.sh ./
 RUN chmod a+x boot.sh
