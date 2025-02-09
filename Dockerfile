@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python
 
 WORKDIR /cdl-admin
 EXPOSE 80

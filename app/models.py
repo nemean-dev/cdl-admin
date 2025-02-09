@@ -39,7 +39,7 @@ class User(UserMixin, db.Model):
         self.password_hash = generate_password_hash(password+current_app.config['PASSWORD_PEPPER'])
 
     def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
+        return check_password_hash(self.password_hash, password+current_app.config['PASSWORD_PEPPER'])
     
     def get_reset_password_token(self, expires_in=600):
         return jwt.encode(
