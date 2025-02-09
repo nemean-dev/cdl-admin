@@ -124,3 +124,7 @@ def wait(seconds):
         time = 10
     sleep(time)
     return(f'Hope you had a nice {time}-second rest.')
+
+@bp.route('/break-app')
+def break_app():
+    raise Exception('For testing app logger smtp handler')

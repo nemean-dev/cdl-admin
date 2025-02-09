@@ -33,7 +33,7 @@ class Config:
     MAIL_USE_TLS = os.getenv('MAIL_USE_TLS') is not None and os.getenv('MAIL_USE_TLS') != 0
     MAIL_USERNAME = os.getenv('MAIL_USERNAME')
     MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
-    ADMINS = os.getenv('MAIL_ADMINS').split(',') if os.getenv('MAIL_ADMINS') else None
+    ADMINS = os.getenv('ADMINS').split(',') if os.getenv('ADMINS') else None
 
     # S3 storage
     AWS_ACCESS_KEY = os.getenv('AWS_ACCESS_KEY')
