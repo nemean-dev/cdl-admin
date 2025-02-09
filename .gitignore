@@ -1,5 +1,6 @@
 app/static/pdfs
 resources/misc
+resources/secret
 *credentials.json
 data
 data-test
