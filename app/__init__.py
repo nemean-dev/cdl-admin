@@ -23,9 +23,9 @@ def storage_service() -> StorageService:
 
     e.g.
     ```
-    from app import get_storage
+    from app import storage_service
 
-    storage = get_storage()
+    storage = storage_service()
     storage.upload_json('path/to/file.json', {'key': 'value'})
     ```
     '''

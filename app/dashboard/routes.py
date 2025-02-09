@@ -126,5 +126,8 @@ def wait(seconds):
     return(f'Hope you had a nice {time}-second rest.')
 
 @bp.route('/break-app')
+@login_required
 def break_app():
+    if not current_user.is_superadmin:
+        return redirect(url_for('dashboard.index'))
     raise Exception('For testing app logger smtp handler')
