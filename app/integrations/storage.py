@@ -97,3 +97,7 @@ class StorageService:
         key = self._get_path_or_key(key)
         csv_data = self.download_text(key)
         return pd.read_csv(StringIO(csv_data))
+    
+    def upload_bytes(self, s3_key, data, content_type="application/octet-stream"):
+        '''Upload in-memory data to S3.'''
+        self.client.upload_fileobj(data, self.bucket_name, s3_key, ExtraArgs={"ContentType": content_type})
