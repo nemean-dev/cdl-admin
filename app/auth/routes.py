@@ -6,7 +6,8 @@ import sqlalchemy as sa
 from app import db
 from app.models import User
 from app.auth import bp
-from app.auth.forms import LoginForm, RegisterUsersForm
+from app.auth.email import send_password_reset_email
+from app.auth.forms import LoginForm, RegisterUsersForm, ResetPasswordRequestForm, ResetPasswordForm
 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -68,3 +69,38 @@ def register_users():
         return redirect(url_for('auth.register_users'))
     
     return render_template('auth/register_users.html', form=form)
+
+@bp.route('/reset_password_request', methods=['GET', 'POST'])
+def reset_password_request():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard.index'))
+    form = ResetPasswordRequestForm()
+    if form.validate_on_submit():
+        user = db.session.scalar(
+            sa.select(User).where(User.email == form.email.data))
+        if user:
+            send_password_reset_email(user)
+        flash('Revisa tu correo para restablecer tu contraseña.')
+        return redirect(url_for('auth.login'))
+    return render_template('auth/reset_password_request.html',
+                           title='Restablecer Contraseña', form=form)
+
+@bp.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    if current_user.is_authenticated:
+        flash("No es posible restablecer la contraseña cuando hay una sesión activa.")
+        return redirect(url_for('dashboard.index'))
+    user = User.verify_reset_password_token(token)
+    if not user:
+        return redirect(url_for('auth.login'))
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        try:
+            user.set_password(form.password.data)
+        except:
+            flash('No fue posible restablecer tu contraseña. Inténtalo nuevamente.', 'warning')
+            return redirect(url_for('auth.reset_password', token=token))
+        db.session.commit()
+        flash('Se restableció tu contraseña')
+        return redirect(url_for('auth.login'))
+    return render_template('auth/reset_password.html', form=form)

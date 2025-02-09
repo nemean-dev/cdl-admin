@@ -1,6 +1,7 @@
 from typing import Optional
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
+import jwt
 from flask import current_app
 from flask_login import UserMixin
 import sqlalchemy as sa
@@ -8,7 +9,7 @@ import sqlalchemy.orm as orm
 from app import db, login
 from app.utils import simple_lower_ascii, is_multiline
 
-MIN_PASSWORD_LENGTH = 8
+MIN_PASSWORD_LENGTH = 8 # TODO: frontend validation
 
 @login.user_loader
 def load_user(id):
@@ -39,6 +40,20 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+    
+    def get_reset_password_token(self, expires_in=600):
+        return jwt.encode(
+            {'reset_password_uid': self.id, 'exp': (datetime.now(timezone.utc) + timedelta(seconds=expires_in)).timestamp()},
+            current_app.config['SECRET_KEY'], algorithm='HS256')
+
+    @staticmethod
+    def verify_reset_password_token(token) -> 'User | None':
+        try:
+            uid = jwt.decode(token, current_app.config['SECRET_KEY'],
+                            algorithms=['HS256'])['reset_password_uid']
+        except:
+            return
+        return db.session.get(User, uid)
 
 class AdminAction(db.Model):
     id: orm.Mapped[int] = orm.mapped_column(primary_key=True)

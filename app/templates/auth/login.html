@@ -6,4 +6,11 @@
 <h1>Iniciar Sesión</h1>
 {{ wtf.quick_form(form) }}
 
+<p>
+  Olvidaste tu contraseña?
+  <a href="{{ url_for('auth.reset_password_request') }}">Restablécela</a>
+</p>
+
+<p>Si quieres crear una cuenta, necesitas contactar a un administrador.</p>
+
 {% endblock %}

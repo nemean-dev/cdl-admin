@@ -5,6 +5,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
+from flask_mail import Mail
 from config import Config
 from app.integrations.storage import StorageService
 
@@ -13,6 +14,7 @@ migrate = Migrate()
 login = LoginManager()
 login.login_view = 'auth.login'
 login.login_message = 'Necesitas inciar sesión para acceder a esta página'
+mail = Mail()
 
 def storage_service() -> StorageService:
     '''
@@ -36,6 +38,7 @@ def create_app(config_class=Config):
     db.init_app(app)
     migrate.init_app(app, db)
     login.init_app(app)
+    mail.init_app(app)
 
     # blueprints
     from app.cli import bp as cli_bp
