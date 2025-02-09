@@ -9,4 +9,6 @@ while true; do
 done
 echo db upgrade command successful
 
+python create_admin.py
+
 exec gunicorn -b :80 --access-logfile - --error-logfile - cdl_admin:app
