@@ -1,7 +1,9 @@
 import os
 import json
+import io
 from datetime import datetime, timezone
-from flask import redirect, url_for, request, flash, render_template, send_file, current_app, jsonify
+from flask import redirect, url_for, request, flash, render_template, send_file, \
+    current_app, jsonify, Response
 from flask_login import login_required, current_user
 import sqlalchemy as sa
 from app import db, storage_service
@@ -10,33 +12,47 @@ from app.utils import get_timestamp
 from app.shop import bp
 from app.shop.forms import SubmitForm, QueryProductsForm
 from app.shop.price_tags import generate_pdf
-from app.integrations.sheety import clear_inventory_updates_sheet, fetch_etiquetas, fetch_inventory_updates
+from app.integrations.sheety import clear_inventory_updates_sheet, \
+    fetch_etiquetas, fetch_inventory_updates
 from app.integrations.gsheets import append_df_to_sheet, clear_sheet_except_header
-from app.shop.inventory import get_local_inventory, delete_local_inventory, write_local_inventory, complete_sheety_data,\
-    adjust_variant_quantities, set_variant_price, set_variant_cost, set_metafields, get_variants_using_query
-from app.shop.captura import get_captura, captura_cleanup_and_validation, add_product_handles, upload_to_shopify, add_cost_histories
+from app.shop.inventory import get_local_inventory, delete_local_inventory, \
+    write_local_inventory, complete_sheety_data, adjust_variant_quantities, \
+        set_variant_price, set_variant_cost, set_metafields, get_variants_using_query
+from app.shop.captura import get_captura, captura_cleanup_and_validation, \
+    add_product_handles, upload_to_shopify, add_cost_histories
 
 @bp.route('/etiquetas-generar-pdf')
 @login_required
 def generate_labels():
-    try:
-        data = fetch_etiquetas()
-        
-        timestamp = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
-        pdf_filename = f"labels_{timestamp}.pdf"
-        pdf_path = os.path.join(current_app.static_folder, 'pdfs', pdf_filename)
+    data = fetch_etiquetas()
+    timestamp = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
+    pdf_path = os.path.join(current_app.config['DATA_DIR'], f"pdfs/etiquetas_{timestamp}.pdf")
+    if current_app.config['USE_LOCAL_STORAGE']:
         os.makedirs(os.path.dirname(pdf_path), exist_ok=True)
-
         generate_pdf(data, pdf_path)
         
         return send_file(pdf_path, as_attachment=True, download_name=pdf_filename)
+    else:
+        data = fetch_etiquetas()
 
-    except Exception as e:
-        current_app.logger.error(f"Error generating labels: {e}")
-        flash('Failed to generate labels. Please try again.', 'danger')
-        return redirect(url_for('dashboard.index'))
+        pdf_buffer = io.BytesIO()
+        generate_pdf(data, pdf_buffer)
+        pdf_buffer.seek(0)
+        
+        timestamp = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
+        pdf_filename = f"labels_{timestamp}.pdf"
+
+        storage = storage_service()
+        storage.upload_bytes(f'labels/{pdf_filename}', pdf_buffer, content_type='application/pdf')
+
+        pdf_buffer.seek(0)
+
+        return Response(pdf_buffer.read(), content_type="application/pdf", headers={
+            "Content-Disposition": f"attachment; filename={pdf_filename}"
+        })
 
 @bp.route('/etiquetas')
+@login_required
 def etiquetas():    
     return render_template('shop/price_tags.html', title='Etiquetas')
 

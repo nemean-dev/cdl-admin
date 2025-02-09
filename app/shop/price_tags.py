@@ -3,9 +3,9 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase.pdfmetrics import stringWidth
 
-def generate_pdf(data:pd.DataFrame, pdf_filename:str):
-    """Generate a PDF from given data."""
-    c = canvas.Canvas(pdf_filename, pagesize=letter)
+def generate_pdf(data: pd.DataFrame, pdf_output):
+    """Generate a PDF from given data. Supports file paths and in-memory buffers."""
+    c = canvas.Canvas(pdf_output, pagesize=letter)
     x_start, y_start = 40, 710
 
     data.columns = data.columns.str.lower()
@@ -44,3 +44,5 @@ def generate_pdf(data:pd.DataFrame, pdf_filename:str):
                 current_rectangle = 0
 
     c.save()
+    if hasattr(pdf_output, "getvalue"):
+        pdf_output.seek(0)
