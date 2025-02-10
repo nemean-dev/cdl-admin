@@ -1,4 +1,6 @@
 import os
+import json
+import base64
 
 class Config:
     SECRET_KEY = os.getenv('SECRET_KEY') or '421a8124af2a47529272631abf3d0218'
@@ -22,7 +24,9 @@ class Config:
     SHOPIFY_API_TOKEN = os.getenv('SHOPIFY_API_TOKEN') 
 
     # Google Sheets
-    GSHEETS_CREDENTIALS = os.getenv("GSHEETS_CREDENTIALS")
+    gsheets_creds = os.getenv("GSHEETS_CREDENTIALS_BASE64")
+    GSHEETS_CREDENTIALS = json.loads(base64.b64decode(gsheets_creds).decode("utf-8")) \
+        if gsheets_creds else None
     GSHEETS_CAPTURA_ID = os.getenv('GSHEETS_CAPTURA_ID')
     SHEETY_USERNAME=os.getenv('SHEETY_USERNAME')
     SHEETY_BEARER=os.getenv('SHEETY_BEARER')

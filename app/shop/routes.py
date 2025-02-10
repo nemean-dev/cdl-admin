@@ -424,9 +424,8 @@ def upload_new_products():
         Metadata.set_last_product_handle(products.iloc[-1]['handle'])
 
         captura_id = current_app.config['GSHEETS_CAPTURA_ID']
-        credentials = current_app.config['GSHEETS_CREDENTIALS']
-        append_df_to_sheet(captura_id, 'Historial', credentials, products)
-        clear_sheet_except_header(captura_id, 'Captura', credentials)
+        append_df_to_sheet(captura_id, 'Historial', products)
+        clear_sheet_except_header(captura_id, 'Captura')
         publish_products_action.status = "Completado"
         db.session.add(publish_products_action)
         db.session.commit()

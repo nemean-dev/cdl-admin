@@ -16,8 +16,7 @@ def get_captura() -> pd.DataFrame:
     '''Returns Captura worksheet with standardized column names'''
     # Get with gsheets connector
     captura_id = current_app.config['GSHEETS_CAPTURA_ID']
-    creds = current_app.config['GSHEETS_CREDENTIALS']
-    df = get_sheet_as_dataframe(captura_id, 'Captura', creds, include_row_num=True)
+    df = get_sheet_as_dataframe(captura_id, 'Captura', include_row_num=True)
 
     # rename cols
     df.rename(inplace=True, columns=
