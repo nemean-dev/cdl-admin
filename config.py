@@ -12,13 +12,14 @@ class Config:
     LOGS_DIR = os.path.join(basedir, 'logs/')
     DATA_DIR = os.path.join(basedir, 'data/')
     # some deployments require logging to stdout
-    LOG_TO_STDOUT = os.getenv('LOG_TO_STDOUT') == '1'
+    LOG_TO_STDOUT = os.getenv('LOG_TO_STDOUT', '').lower() not in ['0', 'False']
 
     # Database
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
         'sqlite:///' + os.path.join(basedir, 'app.db')
     
     # Shopify
+    STORE_NAME = os.getenv('STORE_NAME', 'Shopify Admin')
     SHOPIFY_STORE = os.getenv('SHOPIFY_STORE')
     SHOPIFY_LOCATION_ID = os.getenv('SHOPIFY_LOCATION_ID') 
     SHOPIFY_API_TOKEN = os.getenv('SHOPIFY_API_TOKEN') 
@@ -38,6 +39,7 @@ class Config:
     MAIL_USERNAME = os.getenv('MAIL_USERNAME')
     MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
     ADMINS = os.getenv('ADMINS').split(',') if os.getenv('ADMINS') else None
+    ADMIN_PWD = os.getenv('ADMIN_PWD')
 
     # S3 storage
     AWS_ACCESS_KEY = os.getenv('AWS_ACCESS_KEY')

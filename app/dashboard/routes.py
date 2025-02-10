@@ -47,7 +47,7 @@ def action_log():
 @bp.route('/user/<id>')
 @login_required
 def user(id):
-    user = db.first_or_404(sa.select(User).where(User.id == id))
+    user = db.first_or_404(sa.select(User).where(User.id == int(id)))
 
     page = request.args.get('page', 1, int)
     query = sa.select(AdminAction).where(AdminAction.admin == user).order_by(AdminAction.timestamp.desc())

@@ -6,12 +6,10 @@ from flask import current_app
 def connect_to_gsheet(spreadsheet_id, sheet_name) -> gspread.worksheet.Worksheet: 
     creds = Credentials.from_service_account_info(
         current_app.config.get('GSHEETS_CREDENTIALS'),
-        # scopes = ["https://www.googleapis.com/auth/spreadsheets"] # uncomment if 
-        # '403 Forbidden' or 'insufficient permissions'
-        )
+        scopes = ["https://www.googleapis.com/auth/spreadsheets"])
     client = gspread.authorize(creds)
-    
     ss = client.open_by_key(spreadsheet_id)
+    
     return ss.worksheet(sheet_name)
 
 def get_sheet_data(spreadsheet_id, sheet_name, include_row_num=False) -> list[dict]:
