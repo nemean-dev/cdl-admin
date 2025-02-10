@@ -4,7 +4,11 @@ from reportlab.pdfgen import canvas
 from reportlab.pdfbase.pdfmetrics import stringWidth
 
 def generate_pdf(data: pd.DataFrame, pdf_output):
-    """Generate a PDF from given data. Supports file paths and in-memory buffers."""
+    """
+    Generate a PDF from given data. Supports file paths and in-memory buffers.
+    
+    If pdf_output is buffer, cursor is reset and buffer is ready for reading.
+    """
     c = canvas.Canvas(pdf_output, pagesize=letter)
     x_start, y_start = 40, 710
 

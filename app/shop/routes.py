@@ -37,17 +37,15 @@ def generate_labels():
 
         pdf_buffer = io.BytesIO()
         generate_pdf(data, pdf_buffer)
-        pdf_buffer.seek(0)
         
         timestamp = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
         pdf_filename = f"labels_{timestamp}.pdf"
 
         storage = storage_service()
-        storage.upload_bytes(f'labels/{pdf_filename}', pdf_buffer, content_type='application/pdf')
+        pdf_content = pdf_buffer.getvalue()
+        storage.upload_bytes(f'labels/{pdf_filename}', io.BytesIO(pdf_content), content_type='application/pdf')
 
-        pdf_buffer.seek(0)
-
-        return Response(pdf_buffer.read(), content_type="application/pdf", headers={
+        return Response(pdf_content, content_type="application/pdf", headers={
             "Content-Disposition": f"attachment; filename={pdf_filename}"
         })
 
