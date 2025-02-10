@@ -2,9 +2,9 @@ import ast
 import click
 import pandas as pd
 import sqlalchemy as sa
-from flask import Blueprint
+from flask import Blueprint, current_app
 from app import db
-from app.models import Vendor
+from app.models import Vendor, User
 from app.utils import simple_lower_ascii
 
 bp = Blueprint('cli', __name__)
@@ -141,3 +141,25 @@ def add_vendors_from_list(csv_path):
         db.session.commit()
 
     print('Vendors added successfully.')
+
+@bp.cli.command('create-default-admin')
+def create_admin(): #TODO return non 0 to terminal
+        try:
+            if not db.session.scalars(sa.select(User)).first():
+                admins = current_app.config.get('ADMINS')
+                pwd = current_app.config.get('ADMIN_PWD')
+
+                if not (pwd and admins):
+                    current_app.logger.info("FAILED TO SET ADMIN: no admin or no password")
+                    return
+
+                u = User(email=admins[0], is_superadmin=True, failed_logins=0)
+                u.set_password(pwd)
+                db.session.add(u)
+                db.session.commit()
+                current_app.logger.info("Admin user created.")
+
+            else:
+                current_app.logger.info("Admin user already exists.")
+        except Exception as e:
+            current_app.logger.info(f'there was an error: {e}')
