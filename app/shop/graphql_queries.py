@@ -201,3 +201,71 @@ mutation CreateProdWithVariantInfo ($input: ProductSetInput!) {
   }
 }
 '''
+
+bulk_op_products=\
+'''
+mutation {
+  bulkOperationRunQuery(
+    query: """
+      {
+        products {
+          edges{
+            node {
+              id
+              title
+              vendor
+              metafields {
+                edges {
+                  node {
+                    namespace
+                    key
+                    value
+                  }
+                }
+              }
+              variants {
+                edges {
+                  node {
+                    id
+                    sku
+                    metafield (namespace: "custom", key: "cost_history") {
+                      key
+                      value
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    """
+  ) {
+    bulkOperation {
+      id
+      status
+    }
+    userErrors {
+      field
+      message
+    }
+  }
+}
+'''
+
+poll_bulk_op = \
+'''
+query {
+  currentBulkOperation {
+    id
+    status
+    errorCode
+    createdAt
+    completedAt
+    objectCount
+    fileSize
+    url
+    partialDataUrl
+  }
+}
+'''
