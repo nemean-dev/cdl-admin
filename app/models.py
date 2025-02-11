@@ -92,6 +92,8 @@ class Vendor(db.Model):
     pueblo: orm.Mapped[Optional[str]] = orm.mapped_column(sa.String(128), index=True)
     estado: orm.Mapped[Optional[str]] = orm.mapped_column(sa.String(16), index=True)
     pueblos_estados_shopify: orm.Mapped[Optional[str]] = orm.mapped_column(sa.String())
+    total_products: orm.Mapped[int] = orm.mapped_column(sa.Integer(), default=0)
+    total_variants: orm.Mapped[int] = orm.mapped_column(sa.Integer(), default=0)
     
     def __repr__(self):
         return '<Vendor {}>'.format(self.name)
