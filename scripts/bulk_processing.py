@@ -1,72 +1,23 @@
-# For processing of the data obtained from the following Shopify bulk operation query:
-'''
-mutation {
-  bulkOperationRunQuery(
-    query: """
-      {
-        products {
-          edges{
-            node {
-              id
-              title
-              vendor
-              metafields {
-                edges {
-                  node {
-                    namespace
-                    key
-                    value
-                  }
-                }
-              }
-              variants {
-                edges {
-                  node {
-                    id
-                    sku
-                    metafield (namespace: "custom", key: "cost_history") {
-                      key
-                      value
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    """
-  ) {
-    bulkOperation {
-      id
-      status
-    }
-    userErrors {
-      field
-      message
-    }
-  }
-}
-'''
+# For processing data obtained from the bulk_op_products bulk operation query in 
+# app/shop/graphql_queries.py
+
 import json
 import pandas as pd
 from collections import defaultdict
-from app import storage_service
 
 def read_jsonl(data_path: str) -> list[dict]:
     '''Reads JSONL data from storage service.'''
-    storage = storage_service()
-    data = storage.download_text(data_path)
-    return [json.loads(line) for line in data.splitlines()]
+    with open(data_path, 'r') as f:
+        lines = f.readlines()
+    return [json.loads(line) for line in lines]
 
-def products_df(data_path: str, output_path: str = None) -> pd.DataFrame:
+def products_df(data_path: str) -> pd.DataFrame:
     '''
     Output columns:
     id, title, vendor, total_variants, metafields
 
     Params:
     - data_path: should point to a jsonl file representing bulk operation result
-    - output_path: if given, will write csv to this output path.
     '''
     products = {}
     
@@ -92,19 +43,15 @@ def products_df(data_path: str, output_path: str = None) -> pd.DataFrame:
             products[product_id]['total_variants'] += 1
     
     df = pd.DataFrame(products.values())
-    if output_path:
-        storage = storage_service()
-        storage.upload_csv(output_path, df)
     return df
 
-def variants_df(data_path: str, output_path: str = None) -> pd.DataFrame:
+def variants_df(data_path: str) -> pd.DataFrame:
     '''
     Output columns:
     id, sku, cost_history, variant_id
 
     Params:
     - data_path: should point to a jsonl file representing bulk operation result
-    - output_path: if given, will write csv to this output path.
     '''
     variants = []
     
@@ -118,21 +65,16 @@ def variants_df(data_path: str, output_path: str = None) -> pd.DataFrame:
             })
     
     df = pd.DataFrame(variants)
-
-    if output_path:
-        storage = storage_service()
-        storage.upload_csv(output_path, df)
         
     return df
 
-def vendors_df(data_path: str, output_path: str = None) -> pd.DataFrame:
+def vendors_df(data_path: str) -> pd.DataFrame:
     '''
     Output columns:
-    number_of_products, number_of_variants, towns (string repr of list), vendor
+    number_of_products, number_of_variants, towns (town1;;state1::town2;;state2::etc), vendor
 
     Params:
     - data_path: should point to a jsonl file representing bulk operation result
-    - output_path: if given, will write csv to this output path.
     '''
     vendors = defaultdict(lambda: {'number_of_products': 0, 'number_of_variants': 0, 'towns': set()})
     products = products_df(data_path)
@@ -143,7 +85,7 @@ def vendors_df(data_path: str, output_path: str = None) -> pd.DataFrame:
         vendors[vendor]['number_of_variants'] += row['total_variants']
         metafields = row['metafields']
 
-        pueblo, estado = None, None
+        pueblo, estado = '', ''
         for metafield in metafields:
             if metafield['namespace']=='custom' and metafield['key']=='pueblo':
                 pueblo = metafield['value']
@@ -154,20 +96,30 @@ def vendors_df(data_path: str, output_path: str = None) -> pd.DataFrame:
     
     for name, details in vendors.items():
         details['vendor'] = name
+        details['towns'] = '::'.join(';;'.join(town) for town in details['towns'])
 
     df = pd.DataFrame(vendors.values())
-    df['towns'] = df['towns'].apply(list)
-
-    if output_path:
-        storage = storage_service()
-        storage.upload_csv(output_path, df)
 
     return df
 
+def towns_df(data_path: str) -> pd.DataFrame:
+    '''
+    All unique combinations of town and state.
+    cols are 'pueblo', 'estado'
+    '''
+    vendors = vendors_df(data_path)
+
+    town_state_pairs = set()
+    for town_string in vendors['towns']:
+        if town_string:
+            town_state_pairs.update(tuple(town.split(';;')) for town in town_string.split('::'))
+
+    df = pd.DataFrame(town_state_pairs, columns=['pueblo', 'estado'])
+
+    return df
+    
 
 if __name__=='__main__':
-    JSONL_PATH = 'bulk/bulk_operation.jsonl'
+    JSONL_PATH = '../data/bulk/bulk-5095337427241.jsonl'
 
-    products_df(JSONL_PATH, 'bulk/products.csv')
-    variants_df(JSONL_PATH, 'bulk/variants.csv')
-    vendors_df (JSONL_PATH, 'bulk/vendors.csv')
+    towns_df(JSONL_PATH).to_csv('../data/bulk/pueblos.csv')
