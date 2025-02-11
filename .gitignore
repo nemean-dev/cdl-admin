@@ -6,6 +6,7 @@ data
 data-test
 logs
 logs-test
+migrations_old
 
 .env*
 

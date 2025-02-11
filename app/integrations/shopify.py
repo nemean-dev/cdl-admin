@@ -95,12 +95,12 @@ def graphql_query(query: str, variables: dict = None) -> requests.Response:
         finally:
             try_count+=1
 
-    return res
+    return res # TODO why not just return res.json() ?
 
 def raise_for_user_errors(res: requests.Response, queried_field: str):
     """
     This function should only be used with mutations.
-    queried_field is the top level field of the mutation.
+    queried_field is the top level field of the mutation; containing the 'userErrors' field.
     """
     try:
         user_errors = res.json()['data'][queried_field]['userErrors']
@@ -111,7 +111,11 @@ def raise_for_user_errors(res: requests.Response, queried_field: str):
     if len(user_errors) > 0:
         error_msg = f'There was an error in the mutation input: {str(user_errors)}'
         current_app.logger.error(error_msg)
-        raise ShopifyUserError(error_msg)
+        raise ShopifyUserError(error_msg) 
+        # TODO: instead of raising for user errors everywhere, make 
+        # graphql_query() identify if the request, mutation name (or write it in 
+        # the graphql_queries.py file) is a mutation and raise for user errors 
+        # if it is.
 
 def throttle_management(response: requests.Response, default_seconds=0):
     try:
