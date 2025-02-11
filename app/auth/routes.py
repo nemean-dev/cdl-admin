@@ -32,12 +32,9 @@ def login():
                         text_body='Hubieron demasiados intentos fallidos de inicio de sesión.\n\n'
                             'Por motivos de seguridad, contacta a un administrador para desbloquear tu cuenta.',
                     )
-                sleep(2)
-                flash('Email o contraseña incorrectos.')
-
-                return redirect(url_for('auth.login'))
         
-            if user.check_password(form.password.data):
+            elif user.check_password(form.password.data):
+                current_app.logger.log(f'Auth: success; id {user.id}')
                 login_user(user, remember=form.remember_me.data)
                 flash('Inicio de sesión exitoso')
                 next_page = request.args.get('next')
@@ -45,11 +42,16 @@ def login():
                     next_page = url_for('dashboard.index')
 
                 return redirect(next_page)
-        
-        else:
-            sleep(2)
-            flash('Email o contraseña incorrectos.')
-            return redirect(url_for('auth.login'))
+            
+            else:
+                user.failed_logins += 1
+                db.session.add(user)
+                db.session.commit()
+                current_app.logger.log(f'Auth: failure; id {user.id}')
+
+        sleep(2)
+        flash('Email o contraseña incorrectos.')
+        return redirect(url_for('auth.login'))
     
     return render_template('auth/login.html', title='Inicio de sesión', form=form)
 
