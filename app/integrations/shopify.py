@@ -134,3 +134,52 @@ def throttle_management(response: requests.Response, default_seconds=0):
     except KeyError:
         current_app.logger.warning("No query cost info in response, skipping throttle management. Waiting for the default time.")
         sleep(default_seconds)
+
+def start_bulk_operation(query: str, variables: dict = None) -> str:
+    '''Returns operation id. Raises for user errors.'''
+    res = graphql_query(query, variables)
+    raise_for_user_errors(res, 'bulkOperationRunQuery')
+
+    id = res.json()['data']['bulkOperationRunQuery']['bulkOperation']['id']
+    current_app.logger.info(f"Started bulk operation: {id}")
+
+    return id
+
+def poll_bulk_operation(id) -> str | None:
+    '''
+    If the bulk operation has been completed, returns the download url of the data.
+    Otherwise, returns None.
+
+    Example usage:
+    ```
+    while True:
+        sleep(5)
+        url = poll_bulk_operation(id)
+        if url:
+            break
+    ```
+    '''
+    poll_bulk_op = \
+'''
+query {
+    currentBulkOperation {
+        id
+        status
+        errorCode
+        createdAt
+        completedAt
+        objectCount
+        fileSize
+        url
+        partialDataUrl
+    }
+}
+'''
+    res = graphql_query(poll_bulk_op).json()
+    status = res['data']['currentBulkOperation']['status']
+    if status == 'COMPLETED':
+        current_app.logger.info(f"Bulk operation complete.")
+        return res['data']['currentBulkOperation']['url']
+    else:
+        return None
+

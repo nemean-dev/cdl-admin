@@ -252,20 +252,3 @@ mutation {
   }
 }
 '''
-
-poll_bulk_op = \
-'''
-query {
-  currentBulkOperation {
-    id
-    status
-    errorCode
-    createdAt
-    completedAt
-    objectCount
-    fileSize
-    url
-    partialDataUrl
-  }
-}
-'''
