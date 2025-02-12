@@ -1,4 +1,4 @@
-"""admin_action table
+"""admin_action
 
 Revision ID: 2d726b9a9b89
 Revises: 5d50d9ca795c

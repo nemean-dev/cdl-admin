@@ -15,6 +15,5 @@ if [[ "$?" != "0" ]]; then
     echo "Failed to create default admin user."
     exit 1
 fi
-echo "Default user created successfully"
 
 exec gunicorn -b :80 --access-logfile - --error-logfile - cdl_admin:app

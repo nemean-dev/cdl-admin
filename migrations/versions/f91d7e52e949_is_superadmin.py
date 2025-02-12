@@ -1,4 +1,4 @@
-"""empty message
+"""users         is_superadmin
 
 Revision ID: f91d7e52e949
 Revises: 2d726b9a9b89

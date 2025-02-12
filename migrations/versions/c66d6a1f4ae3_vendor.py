@@ -1,4 +1,4 @@
-"""empty message
+"""vendor
 
 Revision ID: c66d6a1f4ae3
 Revises: b5b40ccfe858

@@ -1,4 +1,4 @@
-"""empty message
+"""user          created_at
 
 Revision ID: 4a83433bea20
 Revises: cff29ea409eb

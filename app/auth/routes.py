@@ -34,7 +34,7 @@ def login():
                     )
         
             elif user.check_password(form.password.data):
-                current_app.logger.log(f'Auth: success; id {user.id}')
+                current_app.logger.info(f'Auth: success; id {user.id}')
                 login_user(user, remember=form.remember_me.data)
                 flash('Inicio de sesión exitoso')
                 next_page = request.args.get('next')
@@ -47,7 +47,7 @@ def login():
                 user.failed_logins += 1
                 db.session.add(user)
                 db.session.commit()
-                current_app.logger.log(f'Auth: failure; id {user.id}')
+                current_app.logger.info(f'Auth: failure; id {user.id}')
 
         sleep(2)
         flash('Email o contraseña incorrectos.')

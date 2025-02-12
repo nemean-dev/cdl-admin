@@ -1,4 +1,4 @@
-"""empty message
+"""vendors       pueblo, estado (as strings)
 
 Revision ID: cff29ea409eb
 Revises: edc2a8ddb6ff

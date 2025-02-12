@@ -1,4 +1,4 @@
-"""empty message
+"""vendor        compare_name 
 
 Revision ID: 0bd391570c76
 Revises: c66d6a1f4ae3

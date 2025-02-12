@@ -1,4 +1,4 @@
-"""empty message
+"""vendor        total_products, total_variants
 
 Revision ID: df341f2a1be6
 Revises: deea039ff779
@@ -25,8 +25,9 @@ def upgrade():
     
     op.execute("UPDATE vendor SET total_products = 0")
     op.execute("UPDATE vendor SET total_variants = 0")
-
-    with op.batch_alter_table('vendor',schema=None) as batch_op:
+    
+    # this will fail on SQLite. Just use local Postgres.
+    with op.batch_alter_table('vendor', schema=None) as batch_op:
         batch_op.alter_column(sa.Column('total_products', sa.Integer(), nullable=False))
         batch_op.alter_column(sa.Column('total_variants', sa.Integer(), nullable=False))
 

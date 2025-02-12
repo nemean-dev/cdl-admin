@@ -7,7 +7,8 @@ class Config:
     PASSWORD_PEPPER = os.getenv('PASSWORD_PEPPER') or 'whateverq09ydf8d9an7hfas'
     
     # Storage
-    USE_LOCAL_STORAGE = os.getenv('USE_LOCAL_STORAGE', 'False').lower() in ['true', '1']
+    USE_LOCAL_STORAGE = not os.getenv('AWS_BUCKET_NAME') or \
+        os.getenv('USE_LOCAL_STORAGE', 'False').lower() in ['true', '1']
     basedir = os.path.abspath(os.path.dirname(__file__)) if USE_LOCAL_STORAGE else ''
     LOGS_DIR = os.path.join(basedir, 'logs/')
     DATA_DIR = os.path.join(basedir, 'data/')

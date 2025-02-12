@@ -15,4 +15,4 @@ RUN chmod a+x boot.sh
 COPY migrations migrations
 COPY app app
 
-CMD [ "gunicorn", "-b", ":80", "--access-logfile", "-", "--error-logfile", "-", "cdl_admin:app" ]
+CMD [ "/bin/bash", "boot.sh" ]

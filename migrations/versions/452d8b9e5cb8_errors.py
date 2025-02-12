@@ -1,4 +1,4 @@
-"""empty message
+"""admin_action  errors
 
 Revision ID: 452d8b9e5cb8
 Revises: f91d7e52e949
