@@ -12,7 +12,7 @@ from app.utils import simple_lower_ascii, is_multiline
 MIN_PASSWORD_LENGTH = 8
 
 @login.user_loader
-def load_user(id):
+def load_user(id) -> 'User':
     return db.session.get(User, int(id))
 
 class User(UserMixin, db.Model):
@@ -33,14 +33,15 @@ class User(UserMixin, db.Model):
 
     def __repr__(self):
         return '<User {}>'.format(self.email)
-    
-    def set_password(self, password):
-        if len(password) < MIN_PASSWORD_LENGTH:
+
+    def set_password(self, password: str):
+        '''Must be at least MIN_PASSWORD_LENGTH characters long.'''
+        if not password or len(password) < MIN_PASSWORD_LENGTH:
             raise ValueError(f"Password must be at least {MIN_PASSWORD_LENGTH} characters long")
-        self.password_hash = generate_password_hash(password+current_app.config['PASSWORD_PEPPER'])
+        self.password_hash = generate_password_hash(password+current_app.config.get('PASSWORD_PEPPER'))
 
     def check_password(self, password):
-        return check_password_hash(self.password_hash, password+current_app.config['PASSWORD_PEPPER'])
+        return check_password_hash(self.password_hash, password+current_app.config.get('PASSWORD_PEPPER'))
     
     def get_reset_password_token(self, expires_in=600):
         return jwt.encode(
@@ -83,17 +84,39 @@ class File(db.Model):
     def __repr__(self):
         return '<File {}>'.format(self.path)
 
+class Estado(db.Model):
+    id: orm.Mapped[int] = orm.mapped_column(primary_key=True)
+    name: orm.Mapped[str] = orm.mapped_column(
+        sa.String(32), index=True, unique=True)
+    code: orm.Mapped[Optional[str]] = orm.mapped_column(
+        sa.String(16), index=True, unique=True)
+    pueblos: orm.WriteOnlyMapped['Pueblo'] = orm.relationship(
+        back_populates='estado')
+
+class Pueblo(db.Model):
+    __table_args__ = (sa.UniqueConstraint('name', 'estado_id'),)
+
+    id: orm.Mapped[int] = orm.mapped_column(primary_key=True)
+    name: orm.Mapped[str] = orm.mapped_column(sa.String(128), index=True)
+    estado_id: orm.Mapped[int] = orm.mapped_column(sa.ForeignKey(Estado.id),
+                                                 index=True)
+    estado: orm.Mapped[Estado] = orm.relationship(back_populates='pueblos')
+    vendors: orm.WriteOnlyMapped['Vendor'] = orm.relationship(
+        back_populates='pueblo')
+
 class Vendor(db.Model):
     id: orm.Mapped[int] = orm.mapped_column(primary_key=True)
     name: orm.Mapped[str] = orm.mapped_column(sa.String(256), index=True,
                                              unique=True)
     compare_name: orm.Mapped[str] = orm.mapped_column(sa.String(256), index=True,
                                                       unique=True)
-    pueblo: orm.Mapped[Optional[str]] = orm.mapped_column(sa.String(128), index=True)
-    estado: orm.Mapped[Optional[str]] = orm.mapped_column(sa.String(16), index=True)
-    pueblos_estados_shopify: orm.Mapped[Optional[str]] = orm.mapped_column(sa.String())
+    shopify_names: orm.Mapped[str] = orm.mapped_column(sa.String(1024))
+    pueblos_shopify: orm.Mapped[Optional[str]] = orm.mapped_column(sa.String())
     total_products: orm.Mapped[int] = orm.mapped_column(sa.Integer(), default=0)
     total_variants: orm.Mapped[int] = orm.mapped_column(sa.Integer(), default=0)
+    pueblo_id: orm.Mapped[int] = orm.mapped_column(sa.ForeignKey(Pueblo.id),
+                                                 index=True)
+    pueblo: orm.Mapped[Pueblo] = orm.relationship(back_populates='vendors')
     
     def __repr__(self):
         return '<Vendor {}>'.format(self.name)
@@ -104,23 +127,20 @@ class Vendor(db.Model):
         self.name = name
         self.compare_name = simple_lower_ascii(name) #lowered, no accents, and no multiple consecutive whitespace characters
     
-    def set_pueblo(self, pueblo):
-        if is_multiline(pueblo):
-            raise ValueError('Multiline strings not allowed as Vendor names.')
-        if not self.name:
-            raise ValueError('You must set the vendor name before pueblo or estado.')
-        if self.compare_name in ['anonimo', 'x']:
-            return
-        self.pueblo = pueblo
-
-    def set_estado(self, estado):
-        if is_multiline(estado):
-            raise ValueError('Multiline strings not allowed as Vendor names.')
-        if not self.name:
-            raise ValueError('You must set the vendor name before pueblo or estado.')
-        if self.compare_name in ['anonimo', 'x']:
-            return
-        self.estado = estado
+    def get_shopify_names(self) -> list[str]:
+        '''
+        The vendor name could or could not be in shopify_names. Alternative names 
+        correspond to vendor values in shopify, while this table is intended as
+        a source of truth for vendors. the app provides a reconciliation
+        mechanism to normalise shopify data. #TODO
+        '''
+        return self.shopify_names.split('::')
+    
+    def add_shopify_name(self, name):
+        names = self.get_shopify_names()
+        if name not in names:
+            names.append(name)
+            self.shopify_names = '::'.join(names)
 
 class Metadata(db.Model):
     key: orm.Mapped[str] = orm.mapped_column(sa.String(128), primary_key=True)
