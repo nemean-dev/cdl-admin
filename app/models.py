@@ -84,25 +84,25 @@ class File(db.Model):
     def __repr__(self):
         return '<File {}>'.format(self.path)
 
-class Estado(db.Model):
+class State(db.Model):
     id: orm.Mapped[int] = orm.mapped_column(primary_key=True)
     name: orm.Mapped[str] = orm.mapped_column(
         sa.String(32), index=True, unique=True)
     code: orm.Mapped[Optional[str]] = orm.mapped_column(
         sa.String(16), index=True, unique=True)
-    pueblos: orm.WriteOnlyMapped['Pueblo'] = orm.relationship(
-        back_populates='estado')
+    towns: orm.WriteOnlyMapped['Town'] = orm.relationship(
+        back_populates='state')
 
-class Pueblo(db.Model):
-    __table_args__ = (sa.UniqueConstraint('name', 'estado_id'),)
+class Town(db.Model):
+    __table_args__ = (sa.UniqueConstraint('name', 'state_id'),)
 
     id: orm.Mapped[int] = orm.mapped_column(primary_key=True)
     name: orm.Mapped[str] = orm.mapped_column(sa.String(128), index=True)
-    estado_id: orm.Mapped[int] = orm.mapped_column(sa.ForeignKey(Estado.id),
+    state_id: orm.Mapped[int] = orm.mapped_column(sa.ForeignKey(State.id),
                                                  index=True)
-    estado: orm.Mapped[Estado] = orm.relationship(back_populates='pueblos')
+    state: orm.Mapped[State] = orm.relationship(back_populates='towns')
     vendors: orm.WriteOnlyMapped['Vendor'] = orm.relationship(
-        back_populates='pueblo')
+        back_populates='town')
 
 class Vendor(db.Model):
     id: orm.Mapped[int] = orm.mapped_column(primary_key=True)
@@ -110,13 +110,16 @@ class Vendor(db.Model):
                                              unique=True)
     compare_name: orm.Mapped[str] = orm.mapped_column(sa.String(256), index=True,
                                                       unique=True)
-    shopify_names: orm.Mapped[str] = orm.mapped_column(sa.String(1024))
-    pueblos_shopify: orm.Mapped[Optional[str]] = orm.mapped_column(sa.String())
+    # towns_shopify is comma-separated list of town ids associated with this vendor
+    towns_shopify: orm.Mapped[Optional[str]] = orm.mapped_column(sa.String()) 
     total_products: orm.Mapped[int] = orm.mapped_column(sa.Integer(), default=0)
     total_variants: orm.Mapped[int] = orm.mapped_column(sa.Integer(), default=0)
-    pueblo_id: orm.Mapped[int] = orm.mapped_column(sa.ForeignKey(Pueblo.id),
+    # town_id is actual intended value. When data is clean, str(town_id) == towns_shopify
+    town_id: orm.Mapped[int] = orm.mapped_column(sa.ForeignKey(Town.id),
                                                  index=True)
-    pueblo: orm.Mapped[Pueblo] = orm.relationship(back_populates='vendors')
+    town: orm.Mapped['Town'] = orm.relationship(back_populates='vendors')   
+    shopify_vendors: orm.WriteOnlyMapped['ShopifyVendor'] = orm.relationship(
+        back_populates='vendor')
     
     def __repr__(self):
         return '<Vendor {}>'.format(self.name)
@@ -126,21 +129,23 @@ class Vendor(db.Model):
             raise ValueError('Multiline strings not allowed as Vendor names.')
         self.name = name
         self.compare_name = simple_lower_ascii(name) #lowered, no accents, and no multiple consecutive whitespace characters
+
+    def get_shopify_towns_ids(self)-> list[int]:
+        return list(map(int, self.towns_shopify.split(','))) if self.towns_shopify else []
     
-    def get_shopify_names(self) -> list[str]:
-        '''
-        The vendor name could or could not be in shopify_names. Alternative names 
-        correspond to vendor values in shopify, while this table is intended as
-        a source of truth for vendors. the app provides a reconciliation
-        mechanism to normalise shopify data. #TODO
-        '''
-        return self.shopify_names.split('::')
-    
-    def add_shopify_name(self, name):
-        names = self.get_shopify_names()
-        if name not in names:
-            names.append(name)
-            self.shopify_names = '::'.join(names)
+    def add_shopify_town(self, town):
+        '''town may be town id integer or Town object'''
+        towns_ids = self.get_shopify_towns_ids()
+        if isinstance(town, int):
+            town = db.session.get(Town, town)
+        if not isinstance(town, Town):
+            return
+        towns_ids.append(town.id)
+        self.towns_shopify = ','.join(map(str,towns_ids))
+
+class ShopifyVendor(db.Model):
+    id: orm.Mapped[int] = orm.mapped_column(primary_key=True)
+    vendor: orm.Mapped[Vendor] = orm.relationship(back_populates='shopify_vendors')
 
 class Metadata(db.Model):
     key: orm.Mapped[str] = orm.mapped_column(sa.String(128), primary_key=True)
