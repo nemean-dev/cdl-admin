@@ -92,6 +92,9 @@ class State(db.Model):
         sa.String(16), index=True, unique=True)
     towns: orm.WriteOnlyMapped['Town'] = orm.relationship(
         back_populates='state')
+    
+    def __repr__(self):
+        return f'<State {self.code if self.code else '-'} {self.name}>'
 
 class Town(db.Model):
     __table_args__ = (sa.UniqueConstraint('name', 'state_id'),)
@@ -103,6 +106,9 @@ class Town(db.Model):
     state: orm.Mapped[State] = orm.relationship(back_populates='towns')
     vendors: orm.WriteOnlyMapped['Vendor'] = orm.relationship(
         back_populates='town')
+    
+    def __repr__(self):
+        return f'<Town {self.id}: {self.name}>'
 
 class Vendor(db.Model):
     id: orm.Mapped[int] = orm.mapped_column(primary_key=True)
@@ -117,7 +123,7 @@ class Vendor(db.Model):
     # town_id is actual intended value. When data is clean, str(town_id) == towns_shopify
     town_id: orm.Mapped[int] = orm.mapped_column(sa.ForeignKey(Town.id),
                                                  index=True)
-    town: orm.Mapped['Town'] = orm.relationship(back_populates='vendors')   
+    town: orm.Mapped[Optional['Town']] = orm.relationship(back_populates='vendors')   
     shopify_vendors: orm.WriteOnlyMapped['ShopifyVendor'] = orm.relationship(
         back_populates='vendor')
     
@@ -140,12 +146,18 @@ class Vendor(db.Model):
             town = db.session.get(Town, town)
         if not isinstance(town, Town):
             return
-        towns_ids.append(town.id)
-        self.towns_shopify = ','.join(map(str,towns_ids))
+        if town.id not in towns_ids:
+            towns_ids.append(town.id)
+            self.towns_shopify = ','.join(map(str,towns_ids))
 
 class ShopifyVendor(db.Model):
     id: orm.Mapped[int] = orm.mapped_column(primary_key=True)
+    name: orm.Mapped[str] = orm.mapped_column(sa.String(256), index=True,
+                                             unique=True)
     vendor: orm.Mapped[Vendor] = orm.relationship(back_populates='shopify_vendors')
+
+    def __repr__(self):
+        return f'<Town {self.name}>'
 
 class Metadata(db.Model):
     key: orm.Mapped[str] = orm.mapped_column(sa.String(128), primary_key=True)
