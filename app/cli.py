@@ -1,4 +1,5 @@
 import ast
+import sys
 import click
 import pandas as pd
 import sqlalchemy as sa
@@ -6,9 +7,11 @@ from flask import Blueprint, current_app
 from app import db
 from app.models import Vendor, User
 from app.utils import simple_lower_ascii
+from app.shop.bulk_processing import async_update_db
 
 bp = Blueprint('cli', __name__)
 
+# TODO: refactor shop cli commands to a module inside app/shop
 @bp.cli.command('add-vendors-from-products')
 @click.argument('csv_path')
 def add_vendors_from_products(csv_path):
@@ -142,8 +145,9 @@ def add_vendors_from_list(csv_path):
 
     print('Vendors added successfully.')
 
+#TODO return non 0 to terminal
 @bp.cli.command('create-default-admin')
-def create_admin(): #TODO return non 0 to terminal
+def create_admin():
         try:
             if not db.session.scalars(sa.select(User)).first():
                 admins = current_app.config.get('ADMINS')
@@ -151,15 +155,26 @@ def create_admin(): #TODO return non 0 to terminal
 
                 if not (pwd and admins):
                     current_app.logger.info("FAILED TO SET ADMIN: no admin or no password")
-                    return
+                    sys.exit(1)
 
                 u = User(email=admins[0], is_superadmin=True, failed_logins=0)
                 u.set_password(pwd)
                 db.session.add(u)
                 db.session.commit()
                 current_app.logger.info("Admin user created.")
+                sys.exit(0)
 
             else:
                 current_app.logger.info("Admin user already exists.")
+                sys.exit(0)
         except Exception as e:
             current_app.logger.info(f'there was an error: {e}')
+            sys.exit(1)
+
+@bp.cli.command('shopify-sync')
+def update_vendors():
+    '''
+    Asynchronously query shopify via a bulk operation and when the file is ready, 
+    update the vendors table.
+    '''
+    async_update_db()
